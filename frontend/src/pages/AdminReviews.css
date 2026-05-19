@@ -1,0 +1,64 @@
+.admin-reviews-page {
+  min-height: 100vh;
+  background: var(--paper);
+  padding: 40px 16px;
+}
+
+.admin-reviews-container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+.admin-reviews-container h1 {
+  font-family: "Syne", sans-serif;
+  font-size: 34px;
+  margin-bottom: 24px;
+}
+
+.admin-review-list {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-review-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.review-user {
+  color: var(--smoke);
+  margin: 6px 0;
+}
+
+.review-stars {
+  color: #f59e0b;
+  margin-bottom: 8px;
+}
+
+.admin-review-card small {
+  display: block;
+  margin-top: 10px;
+  color: var(--smoke);
+}
+
+.delete-review-btn {
+  border: none;
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  height: fit-content;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .admin-review-card {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,119 @@
+.edit-product-page {
+  min-height: 100vh;
+  background: var(--paper);
+  padding: 40px 16px;
+}
+
+.edit-product-card {
+  max-width: 720px;
+  margin: auto;
+  background: white;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+}
+
+.edit-product-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.edit-product-head h1 {
+  font-family: "Syne", sans-serif;
+  font-size: 32px;
+}
+
+.edit-product-head a {
+  color: var(--sky2);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.edit-product-form {
+  display: grid;
+  gap: 14px;
+}
+
+.edit-product-form input,
+.edit-product-form textarea,
+.edit-product-form select {
+  padding: 14px 16px;
+  border: 1px solid var(--dust);
+  border-radius: 14px;
+  outline: none;
+}
+
+.edit-product-form button {
+  border: none;
+  background: var(--sun);
+  color: var(--ink);
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.edit-message {
+  margin-top: 14px;
+  font-weight: 700;
+  color: var(--sky2);
+}
+.edit-image-box {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.edit-image-preview {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--dust);
+}
+
+.edit-image-box button {
+  border: none;
+  background: var(--sun);
+  color: var(--ink);
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.edit-image-box {
+  margin-top: 24px;
+  display: grid;
+  gap: 12px;
+}
+
+.edit-image-box h2 {
+  font-family: "Syne", sans-serif;
+  font-size: 22px;
+}
+
+.edit-image-preview {
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid var(--dust);
+}
+
+.edit-image-box input {
+  padding: 12px;
+  border: 1px solid var(--dust);
+  border-radius: 14px;
+}
+
+.edit-image-box button {
+  border: none;
+  background: var(--sun);
+  color: var(--ink);
+  padding: 14px;
+  border-radius: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}

@@ -1,0 +1,46 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --sun: #ffd000;
+  --sun2: #ffa800;
+  --sky: #0ea5e9;
+  --sky2: #0284c7;
+  --mint: #10b981;
+  --coral: #ff6b6b;
+  --ink: #0f172a;
+  --ink2: #334155;
+  --smoke: #64748b;
+  --dust: #cbd5e1;
+  --paper: #f8fafc;
+  --white: #ffffff;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "Outfit", sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button,
+input {
+  font: inherit;
+}

@@ -1,0 +1,242 @@
+.hero {
+  min-height: 85vh;
+  background: var(--white);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, rgba(255, 208, 0, 0.18) 0%, transparent 70%);
+  top: -200px;
+  right: -100px;
+  border-radius: 50%;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.12) 0%, transparent 70%);
+  bottom: -150px;
+  left: 10%;
+  border-radius: 50%;
+}
+
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 1320px;
+  margin: auto;
+  padding: 80px 32px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  align-items: center;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff9e6;
+  border: 1.5px solid rgba(255, 208, 0, 0.45);
+  border-radius: 30px;
+  padding: 6px 16px 6px 6px;
+  margin-bottom: 28px;
+}
+
+.hero-pill-dot {
+  width: 26px;
+  height: 26px;
+  background: var(--sun);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-title {
+  font-family: "Syne", sans-serif;
+  font-weight: 800;
+  font-size: 70px;
+  line-height: 1;
+  letter-spacing: -2px;
+  color: var(--ink);
+  margin-bottom: 22px;
+}
+
+.line-yellow {
+  color: var(--sun2);
+}
+
+.line-sky {
+  color: var(--sky);
+}
+
+.hero-desc {
+  font-size: 17px;
+  color: var(--smoke);
+  line-height: 1.75;
+  max-width: 440px;
+  margin-bottom: 36px;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-sun {
+  background: var(--sun);
+  color: var(--ink);
+  padding: 15px 32px;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  transition: 0.25s;
+}
+
+.btn-sun:hover {
+  transform: translateY(-3px);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 2px solid var(--dust);
+  color: var(--ink2);
+  padding: 15px 28px;
+  border-radius: 14px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: 0.25s;
+}
+
+.btn-ghost:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+.hero-right {
+  position: relative;
+  height: 420px;
+}
+
+.hero-card {
+  position: absolute;
+  background: var(--white);
+  border-radius: 24px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hero-card-main {
+  width: 280px;
+  height: 340px;
+  top: 20px;
+  left: 40px;
+}
+
+.hero-card-main img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+}
+
+.hero-card-sm {
+  width: 180px;
+  top: 60px;
+  right: 10px;
+}
+
+.hero-card-sm img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+}
+
+.hero-card-info {
+  padding: 14px 16px;
+}
+
+.hero-card-brand {
+  font-size: 11px;
+  color: var(--smoke);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.hero-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 4px 0;
+}
+
+.hero-card-price {
+  font-family: "Syne", sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--sky2);
+}
+
+.hero-badge {
+  position: absolute;
+  top: 320px;
+  left: 20px;
+  background: var(--mint);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  .hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-right {
+    display: none;
+  }
+
+  .hero-title {
+    font-size: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-inner {
+    padding: 60px 16px;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .btn-sun,
+  .btn-ghost {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}

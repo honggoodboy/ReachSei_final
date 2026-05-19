@@ -1,0 +1,99 @@
+.admin-products-page {
+  min-height: 100vh;
+  background: var(--paper);
+  padding: 40px 16px;
+}
+
+.admin-products-container {
+  max-width: 1100px;
+  margin: auto;
+}
+
+.admin-products-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.admin-products-head h1 {
+  font-family: "Syne", sans-serif;
+  font-size: 34px;
+}
+
+.add-product-link {
+  background: var(--sun);
+  color: var(--ink);
+  padding: 12px 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.admin-product-list {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-product-card {
+  background: white;
+  border-radius: 20px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.admin-product-card img {
+  width: 90px;
+  height: 90px;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.admin-product-card h3 {
+  margin-bottom: 6px;
+}
+
+.admin-product-card p {
+  color: var(--smoke);
+  margin-bottom: 6px;
+}
+
+.admin-product-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-product-actions button {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.edit-btn {
+  background: #e0f2fe;
+  color: var(--sky2);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+@media (max-width: 700px) {
+  .admin-product-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-product-card img {
+    width: 100%;
+    height: 220px;
+  }
+}
