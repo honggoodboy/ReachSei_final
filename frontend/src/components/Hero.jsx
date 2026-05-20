@@ -1,6 +1,6 @@
 import "./Hero.css";
-import jerseyImage from "../img/jersey.jpg";
-import shoesImage from "../img/shoes.jpg";
+import jerseyImage from "../img/babushirt.jpg";
+import shoesImage from "../img/shoe1.jpg";
 export default function Hero() {
   return (
     <section className="hero">
