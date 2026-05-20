@@ -1,5 +1,6 @@
 import "./Hero.css";
-
+import jerseyImage from "../img/jersey.jpg";
+import shoesImage from "../img/shoes.jpg";
 export default function Hero() {
   return (
     <section className="hero">
@@ -35,7 +36,7 @@ export default function Hero() {
 
         <div className="hero-right">
           <div className="hero-card hero-card-main">
-            <img src="/img/jersey.jpg" alt="Jersey" />
+            <img src={jerseyImage} alt="Jersey" />
             <div className="hero-card-info">
               <p className="hero-card-brand">BabuTeam</p>
               <p className="hero-card-name">OBC Fan Jersey 2026</p>
@@ -44,7 +45,7 @@ export default function Hero() {
           </div>
 
           <div className="hero-card hero-card-sm">
-            <img src="/img/shoes.jpg" alt="Shoes" />
+            <img src={shoesImage} alt="Shoes" />
             <div className="hero-card-info">
               <p className="hero-card-brand">Mizuno</p>
               <p className="hero-card-name">Court Shoes</p>
