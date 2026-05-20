@@ -35,7 +35,7 @@ export default function Hero() {
 
         <div className="hero-right">
           <div className="hero-card hero-card-main">
-            <img src="/src/img/babushirt.jpg" alt="Jersey" />
+            <img src="/img/jersey.jpg" alt="Jersey" />
             <div className="hero-card-info">
               <p className="hero-card-brand">BabuTeam</p>
               <p className="hero-card-name">OBC Fan Jersey 2026</p>
@@ -44,7 +44,7 @@ export default function Hero() {
           </div>
 
           <div className="hero-card hero-card-sm">
-            <img src="/src/img/shoe1.jpg" alt="Shoes" />
+            <img src="/img/shoes.jpg" alt="Shoes" />
             <div className="hero-card-info">
               <p className="hero-card-brand">Mizuno</p>
               <p className="hero-card-name">Court Shoes</p>
