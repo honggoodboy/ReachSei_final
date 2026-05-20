@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useCart } from "../context/CartContext";
 import "./CheckoutPage.css";
-
+import qrImage from "../img/aba-qr.png";
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
@@ -232,15 +232,15 @@ export default function CheckoutPage() {
                   <h4>Scan ABA KHQR</h4>
 
                   <img
-                    src="src/img/aba-qr.png"
+                    src={qrImage}
                     alt="ABA KHQR payment"
                     className="aba-qr-image"
                   />
 
                   <div className="qr-actions">
                     <a
-                      href="src/img/aba-qr.png"
-                      download="src/img/aba-qr.png"
+                      href={qrImage}
+                      download
                       className="download-qr-btn"
                     >
                       Download QR
