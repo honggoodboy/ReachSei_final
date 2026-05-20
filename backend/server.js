@@ -50,9 +50,20 @@ app.use("/reviews", reviewRoutes);
 app.get("/test-db", async (req, res) => {
   try {
     const result = await pool.query("SELECT NOW()");
-    res.json(result.rows[0]);
+    res.json({
+      success: true,
+      time: result.rows[0],
+    });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("DB TEST ERROR:", err);
+
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      code: err.code,
+      detail: err.detail,
+      stack: err.stack,
+    });
   }
 });
 
