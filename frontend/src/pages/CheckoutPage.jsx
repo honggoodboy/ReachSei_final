@@ -215,13 +215,10 @@ export default function CheckoutPage() {
                     <strong>Bank:</strong> ABA / KHQR
                   </p>
                   <p>
-                    <strong>Account Name:</strong> Menghong Soeung
+                    <strong>Account Name:</strong> QUEENM BY S.YAT
                   </p>
                   <p>
-                    <strong>KHR Account:</strong> 005 421 999
-                  </p>
-                  <p>
-                    <strong>USD Account:</strong> 005 421 997
+                    <strong> Account Number:</strong> 002 278 797
                   </p>
                   <p>
                     <strong>Amount:</strong> ${cartTotal.toFixed(2)}
