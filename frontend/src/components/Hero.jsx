@@ -2,19 +2,6 @@ import "./Hero.css";
 import jerseyImage from "../img/babushirt.jpg";
 import shoesImage from "../img/shoe1.jpg";
 export default function Hero() {
-
-  const [menuOpen, setMenuOpen] = useState(false);
-    useEffect(() => {
-      const handleEsc = (e) => {
-        if (e.key === "Escape") {
-          setMenuOpen(false);
-          setShowSearch(false);
-        }
-      };
-  
-      window.addEventListener("keydown", handleEsc);
-      return () => window.removeEventListener("keydown", handleEsc);
-    }, []);
   return (
     <section className="hero">
       <div className="hero-grid"></div>
@@ -41,10 +28,10 @@ export default function Hero() {
             <a href="#products" className="btn-sun">
               Shop Now →
             </a>
-            <Link to="/contact" onClick={() => setMenuOpen(false)} className="btn-ghost">
-            Get Deals ↗ <span>›</span>
-          </Link>
-          </div> 
+            <a href="#newsletter" className="btn-ghost">
+              Get Deals ↗
+            </a>
+          </div>
         </div>
 
         <div className="hero-right">
