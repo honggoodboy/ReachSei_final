@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useCart } from "../context/CartContext";
 import "./CheckoutPage.css";
-import qrImage from "../img/aba-qr.jpg";
+import qrImage from "../img/aba-qr.png";
 export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
