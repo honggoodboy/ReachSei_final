@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useToast } from "../context/ToastContext";
 import { useWishlist } from "../context/WishlistContext";
 import "./Products.css";
+import { optimizeCloudinaryUrl } from "../utils/optimizeImage";
 
 export default function Products() {
   const [products, setProducts] = useState([]);
@@ -149,7 +150,12 @@ export default function Products() {
       <div key={product.id} className="product-card">
         <div className="pro-img">
           <Link to={`/products/detail/${product.id}`}>
-            <img src={product.image} alt={product.name} />
+            <img
+  src={optimizeCloudinaryUrl(product.image, 500)}
+  alt={product.name}
+  loading="lazy"
+  className="product-image"
+/>
           </Link>
 
           <button
