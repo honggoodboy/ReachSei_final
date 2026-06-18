@@ -26,6 +26,8 @@ export default function Navbar() {
         { name: "Rackets", to: "/products/rackets" },
         { name: "Bags", to: "/products/bags" },
         { name: "Accessories", to: "/products/accessories" },
+        { name: "Sports Care", to: "/products/sports-care" },
+        { name: "Shuttlecocks", to: "/products/shuttlecocks" },
       ],
     },
     { name: "Newsletter", to: "/newsletter" },

@@ -1,5 +1,5 @@
 import "./Hero.css";
-import jerseyImage from "../img/babushirt.jpg";
+import jerseyImage from "../img/reachseiShirt.png";
 import shoesImage from "../img/shoe1.jpg";
 export default function Hero() {
   return (
@@ -38,9 +38,9 @@ export default function Hero() {
           <div className="hero-card hero-card-main">
             <img src={jerseyImage} alt="Jersey" />
             <div className="hero-card-info">
-              <p className="hero-card-brand">BabuTeam</p>
-              <p className="hero-card-name">OBC Fan Jersey 2026</p>
-              <p className="hero-card-price">$19.99</p>
+              <p className="hero-card-brand">ReachseiTeam</p>
+              <p className="hero-card-name">Reachsei Jersey V1.1</p>
+              <p className="hero-card-price">$15.99</p>
             </div>
           </div>
 

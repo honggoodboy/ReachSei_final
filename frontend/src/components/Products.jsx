@@ -59,6 +59,16 @@ export default function Products() {
       title: "Accessories",
       match: ["accessory", "accessories"],
     },
+    {
+      slug: "sports-care",
+      title: "Sports Care",
+      match: ["sports care", "sport care", "sports medicine"],
+    },
+    {
+      slug: "shuttlecocks",
+      title: "Shuttlecocks",
+      match: ["shuttlecock", "shuttlecocks"],
+    },
     
   ];
 

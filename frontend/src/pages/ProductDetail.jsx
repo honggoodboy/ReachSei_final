@@ -215,62 +215,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="reviews-section">
-        <h2>Customer Reviews</h2>
 
-        <form className="review-form" onSubmit={submitReview}>
-          <select
-            value={reviewForm.rating}
-            onChange={(e) =>
-              setReviewForm({
-                ...reviewForm,
-                rating: e.target.value,
-              })
-            }
-          >
-            <option value="5">★★★★★ 5</option>
-            <option value="4">★★★★☆ 4</option>
-            <option value="3">★★★☆☆ 3</option>
-            <option value="2">★★☆☆☆ 2</option>
-            <option value="1">★☆☆☆☆ 1</option>
-          </select>
-
-          <textarea
-            placeholder="Write your review..."
-            value={reviewForm.comment}
-            onChange={(e) =>
-              setReviewForm({
-                ...reviewForm,
-                comment: e.target.value,
-              })
-            }
-            required
-          />
-
-          <button type="submit">Submit Review</button>
-        </form>
-
-        {reviewMessage && <p className="review-message">{reviewMessage}</p>}
-
-        <div className="review-list">
-          {reviews.length === 0 ? (
-            <p>No reviews yet.</p>
-          ) : (
-            reviews.map((review) => (
-              <div key={review.id} className="review-card">
-                <strong>{review.user_name || "Customer"}</strong>
-
-                <p className="review-stars">
-                  {"★".repeat(review.rating)}
-                  {"☆".repeat(5 - review.rating)}
-                </p>
-
-                <p>{review.comment}</p>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
 
       {/* <div className="mobile-cart-bar">
         <div>
