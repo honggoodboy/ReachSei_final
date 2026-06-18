@@ -160,13 +160,16 @@ export default function EditProduct() {
             <option value="">Select category</option>
             <option value="tshirt">T-Shirt</option>
             <option value="shorts">Shorts</option>
+            <option value="skirt">Skirts</option>
             <option value="shoes">Shoes</option>
             <option value="socks">Socks</option>
+            <option value="jackets">Jackets</option>
             <option value="rackets">Rackets</option>
             <option value="bags">Bags</option>
-            <option value="accessories">Accessories</option>
-            <option value="sports-care">Sports Care</option>
+            <option value="towels">Towels</option>
             <option value="shuttlecocks">Shuttlecocks</option>
+            <option value="sports-care">Sports Care</option>
+            <option value="accessories">Accessories</option>
           </select>
 
           <input

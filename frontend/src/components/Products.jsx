@@ -32,7 +32,12 @@ export default function Products() {
     {
       slug: "shorts",
       title: "Shorts",
-      match: ["short", "shorts", "short dress", "shorts & dresses"],
+      match: ["short", "shorts"],
+    },
+    {
+      slug: "skirts",
+      title: "Skirts",
+      match: ["skirt", "skirts"],
     },
     {
       slug: "shoes",
@@ -50,24 +55,34 @@ export default function Products() {
       match: ["racket", "rackets", "rocket", "rockets"],
     },
     {
+      slug: "jackets",
+      title: "Jackets",
+      match: ["jacket", "jackets"],
+    },
+    {
       slug: "bags",
       title: "Bags",
       match: ["bag", "bags"],
     },
+        {
+      slug: "towels",
+      title: "Towels",
+      match: ["towel", "towels"],
+    },
     {
-      slug: "accessories",
-      title: "Accessories",
-      match: ["accessory", "accessories"],
+      slug: "shuttlecocks",
+      title: "Shuttlecocks",
+      match: ["shuttlecock", "shuttlecocks"],
     },
     {
       slug: "sports-care",
       title: "Sports Care",
       match: ["sports care", "sport care", "sports medicine"],
     },
-    {
-      slug: "shuttlecocks",
-      title: "Shuttlecocks",
-      match: ["shuttlecock", "shuttlecocks"],
+        {
+      slug: "accessories",
+      title: "Accessories",
+      match: ["accessory", "accessories"],
     },
     
   ];
