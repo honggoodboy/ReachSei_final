@@ -72,75 +72,76 @@ export default function CheckoutPage() {
   }));
 
   const handleCheckout = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(localStorage.getItem("user") || "null");
 
-    if (!user) {
-      navigate("/login");
-      return;
+  if (cartItems.length === 0) {
+    setMessage("Your cart is empty.");
+    return;
+  }
+
+  if (formData.paymentMethod === "bank" && !paymentProof) {
+    setMessage("Please upload your bank transfer screenshot.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setMessage("");
+
+    const submitData = new FormData();
+
+    // Guest checkout supported
+    submitData.append("userId", user?.id || "");
+
+    submitData.append("fullName", formData.fullName.trim());
+    submitData.append("phone", formData.phone.trim());
+    submitData.append("address", formData.address.trim());
+    submitData.append("customerNote", formData.customerNote.trim());
+    submitData.append("paymentMethod", formData.paymentMethod);
+    submitData.append("paymentReference", formData.paymentReference.trim());
+    submitData.append("items", JSON.stringify(orderItems));
+    submitData.append("total", cartTotal);
+
+    if (paymentProof) {
+      submitData.append("paymentProof", paymentProof);
     }
 
-    if (cartItems.length === 0) {
-      setMessage("Your cart is empty.");
-      return;
-    }
+    await axios.post(`${API_BASE_URL}/orders`, submitData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
 
-    if (formData.paymentMethod === "bank" && !paymentProof) {
-      setMessage("Please upload your bank transfer screenshot.");
-      return;
-    }
+    setMessage("Order placed successfully!");
+    clearCart();
 
-    try {
-      setLoading(true);
-      setMessage("");
+    setFormData({
+      fullName: "",
+      phone: "",
+      address: "",
+      customerNote: "",
+      paymentMethod: "cash",
+      paymentReference: "",
+    });
 
-      const submitData = new FormData();
+    setPaymentProof(null);
 
-      submitData.append("userId", user.id);
-      submitData.append("fullName", formData.fullName.trim());
-      submitData.append("phone", formData.phone.trim());
-      submitData.append("address", formData.address.trim());
-      submitData.append("customerNote", formData.customerNote.trim());
-      submitData.append("paymentMethod", formData.paymentMethod);
-      submitData.append("paymentReference", formData.paymentReference.trim());
-      submitData.append("items", JSON.stringify(orderItems));
-      submitData.append("total", cartTotal);
-
-      if (paymentProof) {
-        submitData.append("paymentProof", paymentProof);
-      }
-
-      await axios.post(`${API_BASE_URL}/orders`, submitData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      setMessage("Order placed successfully!");
-      clearCart();
-
-      setFormData({
-        fullName: "",
-        phone: "",
-        address: "",
-        customerNote: "",
-        paymentMethod: "cash",
-        paymentReference: "",
-      });
-
-      setPaymentProof(null);
-
-      setTimeout(() => {
+    setTimeout(() => {
+      if (user) {
         navigate("/my-orders");
-      }, 1500);
-    } catch (error) {
-      console.error("Checkout error:", error);
-      setMessage(error.response?.data?.error || "Failed to place order.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      } else {
+        navigate("/");
+      }
+    }, 1500);
+  } catch (error) {
+    console.error("Checkout error:", error);
+    setMessage(error.response?.data?.error || "Failed to place order.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <section className="checkout-page">
