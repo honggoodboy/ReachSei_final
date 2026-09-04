@@ -1,5 +1,5 @@
 import "./Footer.css";
-import logo from "../img/logo_reachsei.jpg"
+import logo from "../img/logo_reachsei.png"
 export default function Footer() {
   return (
     <footer id="footer" className="footer">

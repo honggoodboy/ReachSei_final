@@ -366,7 +366,34 @@
   border-radius: 20px;
   text-align: center;
 }
+.order-price-summary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--dust);
+  display: grid;
+  gap: 8px;
+}
 
+.order-price-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink2);
+}
+
+.order-price-row.delivery {
+  color: var(--sky2);
+  font-weight: 800;
+}
+
+.order-price-row.total {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--dust);
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 900;
+}
 @media (max-width: 900px) {
   .order-summary-main {
     grid-template-columns: 1fr;

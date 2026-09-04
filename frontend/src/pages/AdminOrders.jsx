@@ -158,7 +158,9 @@ export default function AdminOrders() {
   };
 
   const getItemPrice = (item) => {
-    return Number(item.price || item.unitPrice || item.product_price || 0);
+    return Number(
+      item.price || item.unitPrice || item.product_price || 0
+    );
   };
 
   const getItemQuantity = (item) => {
@@ -181,7 +183,49 @@ export default function AdminOrders() {
 
   const formatText = (text) => {
     if (!text) return "Unknown";
-    return text.replace("_", " ");
+
+    return text.replace(/_/g, " ");
+  };
+
+  const getSubtotal = (order) => {
+    if (order.subtotal !== undefined && order.subtotal !== null) {
+      return Number(order.subtotal);
+    }
+
+    const items = getOrderItems(order);
+
+    return items.reduce((sum, item) => {
+      const price = getItemPrice(item);
+      const quantity = getItemQuantity(item);
+
+      return sum + price * quantity;
+    }, 0);
+  };
+
+  const getDeliveryFee = (order) => {
+    if (
+      order.delivery_fee !== undefined &&
+      order.delivery_fee !== null
+    ) {
+      return Number(order.delivery_fee);
+    }
+
+    if (
+      order.deliveryFee !== undefined &&
+      order.deliveryFee !== null
+    ) {
+      return Number(order.deliveryFee);
+    }
+
+    return 2;
+  };
+
+  const getTotal = (order) => {
+    if (order.total !== undefined && order.total !== null) {
+      return Number(order.total);
+    }
+
+    return getSubtotal(order) + getDeliveryFee(order);
   };
 
   return (
@@ -197,16 +241,30 @@ export default function AdminOrders() {
           ) : (
             orders.map((order) => {
               const items = getOrderItems(order);
-              const paymentMethod =
-                order.payment_method || order.paymentMethod || "cash";
+
+              // QR payment only
+              const paymentMethod = "bank";
+
               const paymentStatus = order.payment_status || "unpaid";
               const paymentProof = order.payment_proof;
               const paymentReference = order.payment_reference;
+
               const isOpen = openOrderId === order.id;
-              const orderCode = order.order_code || order.orderCode || order.id;
+
+              const orderCode =
+                order.order_code ||
+                order.orderCode ||
+                order.id;
+
+              const subtotal = getSubtotal(order);
+              const deliveryFee = getDeliveryFee(order);
+              const total = getTotal(order);
 
               return (
-                <div key={order.id} className="order-card clean-order-card">
+                <div
+                  key={order.id}
+                  className="order-card clean-order-card"
+                >
                   <button
                     type="button"
                     className="delete-order-btn"
@@ -215,33 +273,42 @@ export default function AdminOrders() {
                     ×
                   </button>
 
+                  {/* =========================
+                      ORDER SUMMARY
+                  ========================== */}
                   <div className="order-summary-main">
                     <div className="order-summary-info">
                       <h3>Order #{orderCode}</h3>
 
                       {order.order_code && (
                         <p>
-                          <strong>Database ID:</strong> {order.id}
+                          <strong>Database ID:</strong>{" "}
+                          {order.id}
                         </p>
                       )}
 
                       <p>
                         <strong>Customer:</strong>{" "}
-                        {order.full_name || order.fullName || "Unknown"}
+                        {order.full_name ||
+                          order.fullName ||
+                          "Unknown"}
                       </p>
 
                       <p>
-                        <strong>Phone:</strong> {order.phone || "No phone"}
+                        <strong>Phone:</strong>{" "}
+                        {order.phone || "No phone"}
                       </p>
 
                       <p>
                         <strong>Total:</strong> $
-                        {Number(order.total || 0).toFixed(2)}
+                        {total.toFixed(2)}
                       </p>
                     </div>
 
                     <div className="order-summary-status">
-                      <span className={`admin-status status-${order.status}`}>
+                      <span
+                        className={`admin-status status-${order.status}`}
+                      >
                         {formatText(order.status)}
                       </span>
 
@@ -256,43 +323,93 @@ export default function AdminOrders() {
 
                     <div className="order-summary-actions">
                       <select
-                        value={order.status}
+                        value={order.status || "pending"}
                         onChange={(e) =>
-                          updateStatus(order.id, e.target.value)
+                          updateStatus(
+                            order.id,
+                            e.target.value
+                          )
                         }
                       >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="shipped">Shipped</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
+                        <option value="pending">
+                          Pending
+                        </option>
+
+                        <option value="confirmed">
+                          Confirmed
+                        </option>
+
+                        <option value="shipped">
+                          Shipped
+                        </option>
+
+                        <option value="delivered">
+                          Delivered
+                        </option>
+
+                        <option value="cancelled">
+                          Cancelled
+                        </option>
                       </select>
 
                       <button
                         type="button"
                         className="view-details-btn"
-                        onClick={() => setOpenOrderId(isOpen ? null : order.id)}
+                        onClick={() =>
+                          setOpenOrderId(
+                            isOpen ? null : order.id
+                          )
+                        }
                       >
-                        {isOpen ? "Hide Details" : "View Details"}
+                        {isOpen
+                          ? "Hide Details"
+                          : "View Details"}
                       </button>
                     </div>
                   </div>
 
+                  {/* =========================
+                      DETAILS
+                  ========================== */}
                   {isOpen && (
                     <div className="admin-order-details">
                       <div className="details-grid">
+
+                        {/* CUSTOMER DETAILS */}
                         <div className="details-box">
                           <h4>Customer Details</h4>
 
                           <p>
+                            <strong>Name:</strong>{" "}
+                            {order.full_name ||
+                              order.fullName ||
+                              "Unknown"}
+                          </p>
+
+                          <p>
+                            <strong>Phone:</strong>{" "}
+                            {order.phone ||
+                              "No phone"}
+                          </p>
+
+                          <p>
+                            <strong>Province:</strong>{" "}
+                            {order.province ||
+                              "No province"}
+                          </p>
+
+                          <p>
                             <strong>Address:</strong>{" "}
-                            {order.address || "No address"}
+                            {order.address ||
+                              "No address"}
                           </p>
 
                           <p>
                             <strong>Date:</strong>{" "}
                             {order.created_at
-                              ? new Date(order.created_at).toLocaleString()
+                              ? new Date(
+                                  order.created_at
+                                ).toLocaleString()
                               : "No date"}
                           </p>
 
@@ -308,13 +425,17 @@ export default function AdminOrders() {
                               <button
                                 type="button"
                                 className="admin-contact-btn"
-                                onClick={() => copyPhone(order.phone)}
+                                onClick={() =>
+                                  copyPhone(order.phone)
+                                }
                               >
                                 Copy Phone
                               </button>
 
                               <a
-                                href={getTelegramLink(order.phone)}
+                                href={getTelegramLink(
+                                  order.phone
+                                )}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="admin-contact-btn telegram-btn"
@@ -323,25 +444,15 @@ export default function AdminOrders() {
                               </a>
                             </div>
                           )}
-
-                          {order.customer_note ? (
-                            <div className="admin-note-box customer-note-box">
-                              <strong>Customer Note:</strong>
-                              <p>{order.customer_note}</p>
-                            </div>
-                          ) : (
-                            <p className="empty-note">No customer note</p>
-                          )}
                         </div>
 
+                        {/* PAYMENT DETAILS */}
                         <div className="details-box">
                           <h4>Payment Details</h4>
 
                           <p>
                             <strong>Method:</strong>{" "}
-                            {paymentMethod === "bank"
-                              ? "Bank Transfer"
-                              : "Cash on Delivery"}
+                            QR Payment
                           </p>
 
                           <p>
@@ -351,36 +462,49 @@ export default function AdminOrders() {
                                 paymentStatus
                               )}`}
                             >
-                              {formatText(paymentStatus)}
+                              {formatText(
+                                paymentStatus
+                              )}
                             </span>
                           </p>
 
                           {paymentReference && (
                             <p>
-                              <strong>Reference:</strong> {paymentReference}
+                              <strong>
+                                Reference:
+                              </strong>{" "}
+                              {paymentReference}
                             </p>
                           )}
 
                           {paymentProof ? (
                             <div className="payment-proof-box">
                               <p>
-                                <strong>Payment Proof:</strong>
+                                <strong>
+                                  Payment Proof:
+                                </strong>
                               </p>
 
                               <a
-                                href={getImageUrl(paymentProof)}
+                                href={getImageUrl(
+                                  paymentProof
+                                )}
                                 target="_blank"
                                 rel="noreferrer"
                               >
                                 <img
-                                  src={getImageUrl(paymentProof)}
+                                  src={getImageUrl(
+                                    paymentProof
+                                  )}
                                   alt="Payment proof"
                                   className="payment-proof-img"
                                 />
                               </a>
                             </div>
                           ) : (
-                            <p className="no-payment-proof">No payment proof</p>
+                            <p className="no-payment-proof">
+                              No payment proof
+                            </p>
                           )}
 
                           <div className="payment-action-buttons">
@@ -388,7 +512,10 @@ export default function AdminOrders() {
                               type="button"
                               className="mark-paid-btn"
                               onClick={() =>
-                                updatePaymentStatus(order.id, "paid")
+                                updatePaymentStatus(
+                                  order.id,
+                                  "paid"
+                                )
                               }
                             >
                               Mark Paid
@@ -398,7 +525,10 @@ export default function AdminOrders() {
                               type="button"
                               className="reject-payment-btn"
                               onClick={() =>
-                                updatePaymentStatus(order.id, "rejected")
+                                updatePaymentStatus(
+                                  order.id,
+                                  "rejected"
+                                )
                               }
                             >
                               Reject
@@ -419,24 +549,65 @@ export default function AdminOrders() {
                           </div>
                         </div>
 
+                        {/* ORDER PRICE + ADMIN NOTE */}
                         <div className="details-box">
-                          <h4>Admin Note</h4>
+                          <h4>Order Summary</h4>
 
-                          <textarea
-                            placeholder="Write note for customer..."
-                            defaultValue={order.admin_note || ""}
-                            rows="4"
-                            onBlur={(e) =>
-                              updateAdminNote(order.id, e.target.value)
-                            }
-                          />
+                          <div className="order-price-summary">
+                            <div className="order-price-row">
+                              <span>Subtotal</span>
+                              <strong>
+                                ${subtotal.toFixed(2)}
+                              </strong>
+                            </div>
 
-                          <small>
-                            This message will show to customer in My Orders.
-                          </small>
+                            <div className="order-price-row delivery">
+                              <span>
+                                Delivery Fee
+                              </span>
+                              <strong>
+                                ${deliveryFee.toFixed(2)}
+                              </strong>
+                            </div>
+
+                            <div className="order-price-row total">
+                              <span>Total</span>
+                              <strong>
+                                ${total.toFixed(2)}
+                              </strong>
+                            </div>
+                          </div>
+
+                          <div className="admin-note-box">
+                            <strong>
+                              Admin Note
+                            </strong>
+
+                            <textarea
+                              placeholder="Write note for customer..."
+                              defaultValue={
+                                order.admin_note || ""
+                              }
+                              rows="4"
+                              onBlur={(e) =>
+                                updateAdminNote(
+                                  order.id,
+                                  e.target.value
+                                )
+                              }
+                            />
+
+                            <small>
+                              This message will show
+                              to customer in My Orders.
+                            </small>
+                          </div>
                         </div>
                       </div>
 
+                      {/* =========================
+                          ORDER ITEMS
+                      ========================== */}
                       <div className="order-items clean-order-items">
                         <h4>Items</h4>
 
@@ -444,33 +615,59 @@ export default function AdminOrders() {
                           <p>No items found.</p>
                         ) : (
                           items.map((item, index) => {
-                            const size = getItemSize(item);
-                            const price = getItemPrice(item);
-                            const quantity = getItemQuantity(item);
+                            const size =
+                              getItemSize(item);
+
+                            const price =
+                              getItemPrice(item);
+
+                            const quantity =
+                              getItemQuantity(item);
 
                             return (
                               <div
-                                key={item.cartId || item.id || index}
+                                key={
+                                  item.cartId ||
+                                  item.id ||
+                                  index
+                                }
                                 className="order-item"
                               >
-                                <img
-                                  src={getImageUrl(item.image)}
-                                  alt={item.name || "Product"}
-                                />
+                                {item.image && (
+                                  <img
+                                    src={getImageUrl(
+                                      item.image
+                                    )}
+                                    alt={
+                                      item.name ||
+                                      "Product"
+                                    }
+                                  />
+                                )}
 
                                 <div>
-                                  <p>{item.name || "Product"}</p>
+                                  <p>
+                                    {item.name ||
+                                      "Product"}
+                                  </p>
 
                                   <small className="admin-order-size">
-                                    Size: {size || "No size"}
+                                    Size:{" "}
+                                    {size ||
+                                      "No size"}
                                   </small>
 
                                   <small>
-                                    Qty: {quantity} × ${price.toFixed(2)}
+                                    Qty: {quantity} × $
+                                    {price.toFixed(2)}
                                   </small>
 
                                   <small>
-                                    Subtotal: ${(price * quantity).toFixed(2)}
+                                    Subtotal: $
+                                    {(
+                                      price *
+                                      quantity
+                                    ).toFixed(2)}
                                   </small>
                                 </div>
                               </div>

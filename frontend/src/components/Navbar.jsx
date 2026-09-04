@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
-import logo from "../img/logo_reachsei.jpg";
+import logo from "../img/logo_reachsei.png";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar() {
