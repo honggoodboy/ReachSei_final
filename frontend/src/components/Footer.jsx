@@ -51,7 +51,7 @@ export default function Footer() {
             TikTok
           </a>
           <a
-            href="https://t.me/reachseibadminton"
+            href="https://t.me/queenboutiquekh"
             target="_blank"
             rel="noreferrer"
           >

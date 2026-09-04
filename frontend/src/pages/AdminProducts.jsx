@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import "./AdminProducts.css";
+import searchIcon from "../assets/search-icon.png";
 
 const MASTER_CATEGORIES = [
   { slug: "tshirt", title: "T-Shirts", icon: "👕", match: ["tshirt", "t-shirt", "tshirts", "t-shirts"] },
@@ -246,7 +247,9 @@ export default function AdminProducts() {
         {/* Filters and View Mode Controls */}
         <div className="admin-filters-bar">
           <div className="search-box">
-            <span className="search-icon">🔍</span>
+            <span className="search-icon">
+              <img src={searchIcon} alt="Search" />
+            </span>
             <input
               type="text"
               placeholder="Search product name, category, description..."
@@ -325,7 +328,9 @@ export default function AdminProducts() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="no-products">
-            <div className="no-products-icon">🔍</div>
+            <div className="no-products-icon">
+              <img src={searchIcon} alt="No products found" />
+            </div>
             <h3>No products found</h3>
             <p>Try adjusting your category filter or search terms.</p>
             <button

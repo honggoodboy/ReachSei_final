@@ -28,7 +28,12 @@ export default function Hero() {
             <a href="#products" className="btn-sun">
               Shop Now →
             </a>
-            <a href="#newsletter" className="btn-ghost">
+            <a
+              href="https://t.me/queenboutiquekh"
+              target="_blank"
+              rel="noreferrer"
+              className="btn-ghost"
+            >
               Get Deals ↗
             </a>
           </div>

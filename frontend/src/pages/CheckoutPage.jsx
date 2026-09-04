@@ -4,6 +4,7 @@ import axios from "axios";
 import { useCart } from "../context/CartContext";
 import "./CheckoutPage.css";
 import qrImage from "../assets/aba-qr.png";
+import searchIcon from "../assets/search-icon.png";
 
 const PROVINCES = [
   { name: "រាជធានីភ្នំពេញ", fee: 1.5 },
@@ -442,7 +443,7 @@ export default function CheckoutPage() {
                 <div className="province-dropdown">
 
                   <div className="province-search-box">
-                    <span>⌕</span>
+                    <img src={searchIcon} alt="Search" className="province-search-icon" />
 
                     <input
                       type="text"

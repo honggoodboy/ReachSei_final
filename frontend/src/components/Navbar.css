@@ -118,6 +118,20 @@
   transition: 0.2s;
 }
 
+.search-icon-img {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+}
+
+.cart-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+}
+
 .search-pill:focus-within {
   background: white;
   border-color: var(--sky);

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import { useCart } from "../context/CartContext";
 import "./ProductDetail.css";
+import cartIcon from "../assets/cart-icon.png";
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -127,7 +128,7 @@ export default function ProductDetail() {
         </button>
 
         <Link to="/cart" className="detail-cart-link">
-          <span className="detail-cart-icon">🛒</span>
+          <img src={cartIcon} alt="Cart" className="detail-cart-icon-img" />
           <span>Cart</span>
 
           {cartCount > 0 && (
@@ -209,7 +210,9 @@ export default function ProductDetail() {
             >
               {product.stock_status === "soldout"
                 ? "Sold Out"
-                : "🛒 Add to Cart"}
+                : <>
+                    <img src={cartIcon} alt="" className="btn-cart-icon" /> Add to Cart
+                  </>}
             </button>
           </div>
         </div>

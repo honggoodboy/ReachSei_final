@@ -242,6 +242,12 @@
   font-size: 20px;
 }
 
+.province-search-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
 .province-search-box input {
   border: 0 !important;
   box-shadow: none !important;

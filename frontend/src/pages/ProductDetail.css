@@ -342,6 +342,21 @@
   font-size: 20px;
 }
 
+.detail-cart-icon-img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: block;
+}
+
+.btn-cart-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .detail-cart-count {
   position: absolute;
   top: -8px;

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 import logo from "../img/logo_reachsei.png";
+import searchIcon from "../assets/search-icon.png";
+import cartIcon from "../assets/cart-icon.png";
 import { useCart } from "../context/CartContext";
 
 export default function Navbar() {
@@ -115,7 +117,7 @@ export default function Navbar() {
 
           <div className="nav-actions">
             <form className="search-pill desktop-search" onSubmit={handleSearch}>
-              <span>🔍</span>
+              <img src={searchIcon} alt="Search" className="search-icon-img" />
               <input
                 type="text"
                 placeholder="Search gear…"
@@ -130,7 +132,7 @@ export default function Navbar() {
               onClick={() => setShowSearch(true)}
               aria-label="Open search"
             >
-              🔍
+              <img src={searchIcon} alt="Search" className="search-icon-img" />
             </button>
             <div className="desktop-profile">
   <Link to={user ? "/profile" : "/login"} className="profile-trigger">
@@ -152,7 +154,7 @@ export default function Navbar() {
   )}
 </div>
             <Link className="icon-btn" to="/cart" aria-label="Cart">
-              🛒
+              <img src={cartIcon} alt="Cart" className="cart-icon-img" />
               <span className="cart-count">{cartCount}</span>
             </Link>
 
