@@ -147,13 +147,6 @@ export default function ProductDetail() {
 
           <h1>{product.name}</h1>
 
-          {average && (
-            <p className="average-rating">
-              ⭐ {Number(average.average_rating).toFixed(1)} / 5
-              <span> ({average.total_reviews} reviews)</span>
-            </p>
-          )}
-
           <p className="price">${product.price}</p>
 
           <p className="desc">{product.description}</p>

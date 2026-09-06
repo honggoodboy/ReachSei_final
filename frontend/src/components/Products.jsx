@@ -176,11 +176,11 @@ export default function Products() {
         <div className="pro-img">
           <Link to={`/products/detail/${product.id}`}>
             <img
-  src={optimizeCloudinaryUrl(product.image, 500)}
-  alt={product.name}
-  loading="lazy"
-  className="product-image"
-/>
+                  src={optimizeCloudinaryUrl(product.image, 500)}
+                  alt={product.name}
+                  loading="lazy"
+                  className="product-image"
+                />
           </Link>
 
           <button
@@ -214,22 +214,14 @@ export default function Products() {
             {product.name}
           </Link>
 
-          <p className={`pro-stock stock-${product.stock_status || "instock"}`}>
-            {getStockLabel(product.stock_status)}
-          </p>
 
           <div className="pro-price-row">
-            <span className="pro-price">${product.price}</span>
+  <span className="pro-price">${product.price}</span>
 
-            <span className="pro-stars">
-              {"★".repeat(Math.round(product.average_rating || 0))}
-              {"☆".repeat(5 - Math.round(product.average_rating || 0))}
-            </span>
-
-            <span className="pro-reviews">
-              ({product.total_reviews || 0})
-            </span>
-          </div>
+  <span className={`pro-stock stock-${product.stock_status || "instock"}`}>
+    {getStockLabel(product.stock_status)}
+  </span>
+</div>
         </div>
       </div>
     );
