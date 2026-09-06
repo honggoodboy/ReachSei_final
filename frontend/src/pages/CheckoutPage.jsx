@@ -7,8 +7,8 @@ import qrImage from "../assets/aba-qr.png";
 import searchIcon from "../assets/search-icon.png";
 
 const PROVINCES = [
+  { name: "Pick Up", fee: 0 },
   { name: "រាជធានីភ្នំពេញ", fee: 1.5 },
-
   { name: "បន្ទាយមានជ័យ", fee: 2 },
   { name: "បាត់ដំបង", fee: 2 },
   { name: "កំពង់ចាម", fee: 2 },
@@ -66,6 +66,7 @@ export default function CheckoutPage() {
     Other provinces = $2.00
   =========================
   */
+
   const selectedProvince = PROVINCES.find(
     (province) => province.name === formData.province
   );
@@ -76,8 +77,9 @@ export default function CheckoutPage() {
   /*
     =========================
     CLOSE PROVINCE DROPDOWN
-    =========================
+  =========================
   */
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -100,6 +102,7 @@ export default function CheckoutPage() {
     HANDLE INPUT
   =========================
   */
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -114,6 +117,7 @@ export default function CheckoutPage() {
     PROVINCE SELECT
   =========================
   */
+
   const handleProvinceSelect = (province) => {
     setFormData((prev) => ({
       ...prev,
@@ -130,6 +134,7 @@ export default function CheckoutPage() {
     PAYMENT PROOF
   =========================
   */
+
   const handleProofChange = (e) => {
     const file = e.target.files?.[0];
 
@@ -168,6 +173,7 @@ export default function CheckoutPage() {
     ORDER ITEMS
   =========================
   */
+
   const orderItems = cartItems.map((item) => ({
     id: item.id,
     cartId: item.cartId,
@@ -187,6 +193,7 @@ export default function CheckoutPage() {
     CHECKOUT
   =========================
   */
+
   const handleCheckout = async (e) => {
     e.preventDefault();
 
@@ -270,6 +277,7 @@ export default function CheckoutPage() {
         Send these values for frontend/backend compatibility.
         Backend will recalculate them securely.
       */
+
       submitData.append(
         "subtotal",
         Number(cartTotal || 0).toFixed(2)
@@ -341,6 +349,7 @@ export default function CheckoutPage() {
     FILTER PROVINCES
   =========================
   */
+
   const filteredProvinces = PROVINCES.filter(
     (province) =>
       province.name
@@ -355,6 +364,7 @@ export default function CheckoutPage() {
         {/* =========================
             CHECKOUT FORM
         ========================= */}
+
         <div className="checkout-form-card">
 
           <div className="checkout-head">
@@ -369,11 +379,13 @@ export default function CheckoutPage() {
           <h1>Checkout</h1>
 
           <form
+            id="checkout-form"
             onSubmit={handleCheckout}
             className="checkout-form"
           >
 
             {/* FULL NAME */}
+
             <div className="checkout-field">
               <label>
                 Full Name <span>*</span>
@@ -390,6 +402,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* PHONE */}
+
             <div className="checkout-field">
               <label>
                 Phone Number <span>*</span>
@@ -406,6 +419,7 @@ export default function CheckoutPage() {
             </div>
 
             {/* PROVINCE */}
+
             <div
               className="checkout-field province-field"
               ref={provinceRef}
@@ -443,7 +457,12 @@ export default function CheckoutPage() {
                 <div className="province-dropdown">
 
                   <div className="province-search-box">
-                    <img src={searchIcon} alt="Search" className="province-search-icon" />
+
+                    <img
+                      src={searchIcon}
+                      alt="Search"
+                      className="province-search-icon"
+                    />
 
                     <input
                       type="text"
@@ -456,9 +475,11 @@ export default function CheckoutPage() {
                       }
                       autoFocus
                     />
+
                   </div>
 
                   <div className="province-list">
+
                     {filteredProvinces.length === 0 ? (
                       <div className="province-empty">
                         No province found
@@ -492,12 +513,15 @@ export default function CheckoutPage() {
                         )
                       )
                     )}
+
                   </div>
+
                 </div>
               )}
             </div>
 
             {/* ADDRESS */}
+
             <div className="checkout-field">
               <label>
                 Delivery Address <span>*</span>
@@ -515,13 +539,17 @@ export default function CheckoutPage() {
             </div>
 
             {/* PAYMENT */}
+
             <div className="checkout-payment-method">
+
               <label>
                 Payment Method
               </label>
 
               <div className="qr-only-payment">
+
                 <div className="payment-radio">
+
                   <span className="radio-circle active">
                     ✓
                   </span>
@@ -535,11 +563,15 @@ export default function CheckoutPage() {
                       ABA / KHQR
                     </small>
                   </div>
+
                 </div>
+
               </div>
+
             </div>
 
             {/* BANK / QR PAYMENT */}
+
             <div className="bank-payment-box">
 
               <h3>
@@ -582,6 +614,7 @@ export default function CheckoutPage() {
               </div>
 
               {/* QR */}
+
               <div className="qr-payment-box">
 
                 <h4>
@@ -595,6 +628,7 @@ export default function CheckoutPage() {
                 />
 
                 <div className="qr-actions">
+
                   <a
                     href={qrImage}
                     download
@@ -602,6 +636,7 @@ export default function CheckoutPage() {
                   >
                     Download QR
                   </a>
+
                 </div>
 
                 <p className="qr-note">
@@ -614,9 +649,12 @@ export default function CheckoutPage() {
               </div>
 
               {/* REFERENCE */}
+
               <div className="checkout-field">
+
                 <label>
                   Transaction Reference
+
                   <small>
                     (Optional)
                   </small>
@@ -631,10 +669,13 @@ export default function CheckoutPage() {
                   }
                   onChange={handleChange}
                 />
+
               </div>
 
               {/* PAYMENT PROOF */}
+
               <label className="payment-proof-label">
+
                 <span>
                   Upload Payment Screenshot{" "}
                   <b>*</b>
@@ -646,6 +687,7 @@ export default function CheckoutPage() {
                   onChange={handleProofChange}
                   required
                 />
+
               </label>
 
               {paymentProof && (
@@ -657,11 +699,12 @@ export default function CheckoutPage() {
 
             </div>
 
-            {/* SUBMIT */}
+            {/* DESKTOP / TABLET PLACE ORDER */}
+
             <button
               type="submit"
               disabled={loading}
-              className="checkout-submit-btn"
+              className="checkout-submit-btn desktop-place-order"
             >
               {loading
                 ? "Placing Order..."
@@ -687,6 +730,7 @@ export default function CheckoutPage() {
         {/* =========================
             ORDER SUMMARY
         ========================= */}
+
         <div className="checkout-summary-card">
 
           <h2>
@@ -708,6 +752,7 @@ export default function CheckoutPage() {
               >
 
                 <div>
+
                   <span className="checkout-item-name">
                     {item.name}
                   </span>
@@ -722,6 +767,7 @@ export default function CheckoutPage() {
                     Qty: {item.quantity} × $
                     {Number(item.price).toFixed(2)}
                   </small>
+
                 </div>
 
                 <strong>
@@ -737,9 +783,11 @@ export default function CheckoutPage() {
           )}
 
           {/* PRICE SUMMARY */}
+
           <div className="checkout-price-summary">
 
             <div className="checkout-price-row">
+
               <span>
                 Subtotal
               </span>
@@ -747,6 +795,7 @@ export default function CheckoutPage() {
               <strong>
                 ${Number(cartTotal || 0).toFixed(2)}
               </strong>
+
             </div>
 
             <div className="checkout-price-row delivery">
@@ -785,6 +834,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* PAYMENT NOTE */}
+
           <div className="checkout-payment-note">
 
             <p>
@@ -803,6 +853,21 @@ export default function CheckoutPage() {
           </div>
 
         </div>
+
+        {/* =========================
+            MOBILE PLACE ORDER
+        ========================= */}
+
+        <button
+          type="submit"
+          form="checkout-form"
+          disabled={loading}
+          className="checkout-submit-btn mobile-place-order"
+        >
+          {loading
+            ? "Placing Order..."
+            : "Place Order"}
+        </button>
 
       </div>
     </section>

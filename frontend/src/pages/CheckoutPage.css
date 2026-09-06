@@ -756,6 +756,14 @@
   color: #888;
   font-size: 14px;
 }
+.mobile-place-order {
+  display: none;
+}
+
+/* =========================================================
+   PHONE ONLY
+========================================================= */
+
 
 /* =========================
    TABLET
@@ -837,6 +845,17 @@
   .checkout-total strong {
     font-size: 19px;
   }
+      /* Hide original Place Order button */
+  .desktop-place-order {
+    display: none !important;
+  }
+
+  /* Show Place Order below Order Summary */
+  .mobile-place-order {
+    display: block !important;
+    width: 100%;
+    margin-top: 16px;
+  }
 }
 
 /* =========================
@@ -868,5 +887,16 @@
 
   .aba-qr-image {
     width: 210px;
+  }
+    /* Hide original Place Order button */
+  .desktop-place-order {
+    display: none !important;
+  }
+
+  /* Show Place Order below Order Summary */
+  .mobile-place-order {
+    display: block !important;
+    width: 100%;
+    margin-top: 16px;
   }
 }
