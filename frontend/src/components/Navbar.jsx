@@ -137,7 +137,7 @@ export default function Navbar() {
           <nav className="navbar">
             <div className="nav-container">
               {/* LOGO */}
-              <Link className="logo" to="/" onClick={closeAll}>
+              <Link className="logo" to="/admin/login" onClick={closeAll}>
                 <img
                   className="logo-mark"
                   src={logo}

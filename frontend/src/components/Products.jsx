@@ -64,7 +64,7 @@ export default function Products() {
       title: "Bags",
       match: ["bag", "bags"],
     },
-        {
+    {
       slug: "towels",
       title: "Towels",
       match: ["towel", "towels"],
@@ -75,16 +75,15 @@ export default function Products() {
       match: ["shuttlecock", "shuttlecocks"],
     },
     {
-  slug: "sports-care",
-  title: "Sports Care",
-  match: ["sports-care", "sport-care"],
-},
-        {
+      slug: "sports-care",
+      title: "Sports Care",
+      match: ["sports-care", "sport-care"],
+    },
+    {
       slug: "accessories",
       title: "Accessories",
       match: ["accessory", "accessories"],
     },
-    
   ];
 
   const normalizeText = (text) => {
@@ -103,7 +102,7 @@ export default function Products() {
     const cleanCategory = normalizeText(productCategory);
 
     return categorySections.find((section) =>
-      section.match.includes(cleanCategory)
+      section.match.includes(cleanCategory),
     );
   };
 
@@ -176,18 +175,16 @@ export default function Products() {
         <div className="pro-img">
           <Link to={`/products/detail/${product.id}`}>
             <img
-                  src={optimizeCloudinaryUrl(product.image, 500)}
-                  alt={product.name}
-                  loading="lazy"
-                  className="product-image"
-                />
+              src={optimizeCloudinaryUrl(product.image, 500)}
+              alt={product.name}
+              loading="lazy"
+              className="product-image"
+            />
           </Link>
 
           <button
             type="button"
-            className={`pro-fav ${
-              isInWishlist(product.id) ? "active" : ""
-            }`}
+            className={`pro-fav ${isInWishlist(product.id) ? "active" : ""}`}
             onClick={() => toggleWishlist(product)}
           >
             {isInWishlist(product.id) ? "♥" : "♡"}
@@ -202,8 +199,8 @@ export default function Products() {
             {isSoldOut
               ? "Sold Out"
               : product.sizes
-              ? "Choose Size"
-              : "＋ Add to Cart"}
+                ? "Choose Size"
+                : "＋ Add to Cart"}
           </button>
         </div>
 
@@ -214,14 +211,15 @@ export default function Products() {
             {product.name}
           </Link>
 
-
           <div className="pro-price-row">
-  <span className="pro-price">${product.price}</span>
+            <span className="pro-price">${product.price}</span>
 
-  <span className={`pro-stock stock-${product.stock_status || "instock"}`}>
-    {getStockLabel(product.stock_status)}
-  </span>
-</div>
+            <span
+              className={`pro-stock stock-${product.stock_status || "instock"}`}
+            >
+              {getStockLabel(product.stock_status)}
+            </span>
+          </div>
         </div>
       </div>
     );
@@ -278,29 +276,29 @@ export default function Products() {
           <h2 className="section-title">Products</h2>
 
           {categorySections.map((section) => {
-  const items = groupedProducts[section.slug];
+            const items = groupedProducts[section.slug];
 
-  if (!items || items.length === 0) return null;
+            if (!items || items.length === 0) return null;
 
-  return (
-    <div key={section.slug} className="product-category-section">
-      <div className="category-section-head">
-        <h3>{section.title}</h3>
+            return (
+              <div key={section.slug} className="product-category-section">
+                <div className="category-section-head">
+                  <h3>{section.title}</h3>
 
-        <Link
-          to={`/products/${section.slug}`}
-          className="view-all-link"
-        >
-          View All →
-        </Link>
-      </div>
+                  <Link
+                    to={`/products/${section.slug}`}
+                    className="view-all-link"
+                  >
+                    View All →
+                  </Link>
+                </div>
 
-      <div className="product-grid home-category-grid">
-        {items.map((product) => renderProductCard(product))}
-      </div>
-    </div>
-  );
-})}
+                <div className="product-grid home-category-grid">
+                  {items.map((product) => renderProductCard(product))}
+                </div>
+              </div>
+            );
+          })}
         </>
       )}
     </section>
