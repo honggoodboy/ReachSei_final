@@ -96,10 +96,6 @@ export default function MyOrders() {
             <h1>My Orders</h1>
             <p>Track your order history, payment, and delivery status.</p>
           </div>
-
-          <Link to="/" className="my-orders-back">
-            ← Continue Shopping
-          </Link>
         </div>
 
         {orders.length === 0 ? (

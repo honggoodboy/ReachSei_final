@@ -43,10 +43,6 @@ export default function ForgotPassword() {
   return (
     <section className="auth-page">
       <div className="auth-card">
-        <Link to="/login" className="auth-back-btn">
-          ← Back to Login
-        </Link>
-
         <h1>Forgot Password</h1>
 
         <p className="auth-subtitle">

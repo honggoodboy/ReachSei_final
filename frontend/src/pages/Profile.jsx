@@ -18,12 +18,6 @@ export default function Profile() {
 
   return (
     <section className="profile-page">
-      {/* Back Button */}
-      <Link to="/" className="profile-back">
-        <span>←</span>
-        Back
-      </Link>
-
       <div className="profile-card">
         <div className="profile-avatar">
           {user.name?.charAt(0).toUpperCase()}

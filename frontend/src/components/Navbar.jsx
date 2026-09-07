@@ -617,7 +617,7 @@ export default function Navbar() {
               <span className="bottom-nav-icon">
                 <img src={ICONS.account} alt="" />
               </span>
-              <small>Account</small>
+              <small>You</small>
             </Link>
           </nav>
         </>

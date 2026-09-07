@@ -19,15 +19,6 @@ export default function NewsletterPage() {
 
   return (
     <section className="newsletter-page">
-      <div className="newsletter-top">
-        <button
-          type="button"
-          className="newsletter-back-btn"
-          onClick={() => navigate(-1)}
-        >
-          ← Back
-        </button>
-      </div>
 
       <div className="newsletter-card">
         <p className="newsletter-tag">Reachsei Updates</p>

@@ -17,10 +17,6 @@ export default function CartPage() {
       <div className="cart-container">
         <div className="cart-head">
           <h1>Your Cart</h1>
-
-          <Link to="/" className="back-link">
-            ← Continue Shopping
-          </Link>
         </div>
 
         {cartItems.length === 0 ? (

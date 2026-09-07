@@ -51,13 +51,9 @@ export default function Login() {
   };
 
   return (
-  <section className="auth-page">
-    <div className="auth-card">
-      <Link to="/" className="auth-back-btn">
-        ← Back to Home
-      </Link>
-
-      <h1>Login</h1>
+    <section className="auth-page">
+      <div className="auth-card">
+        <h1>Login</h1>
 
       <p className="auth-subtitle">
         Login with your email or phone number.

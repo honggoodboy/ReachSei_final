@@ -12,7 +12,6 @@ export default function WishlistPage() {
       <div className="wishlist-container">
         <div className="wishlist-head">
           <h1>My Wishlist</h1>
-          <Link to="/">← Continue Shopping</Link>
         </div>
 
         {wishlistItems.length === 0 ? (

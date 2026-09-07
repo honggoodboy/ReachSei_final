@@ -122,21 +122,6 @@ export default function ProductDetail() {
 
   return (
     <section className="product-detail">
-      <div className="detail-top-bar">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          ← Back
-        </button>
-
-        <Link to="/cart" className="detail-cart-link">
-          <img src={cartIcon} alt="Cart" className="detail-cart-icon-img" />
-          <span>Cart</span>
-
-          {cartCount > 0 && (
-            <span className="detail-cart-count">{cartCount}</span>
-          )}
-        </Link>
-      </div>
-
       <div className="detail-container">
         <div className="detail-image-wrap">
           <img src={product.image} alt={product.name} />

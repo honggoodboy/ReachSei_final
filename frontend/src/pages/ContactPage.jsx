@@ -58,9 +58,6 @@ export default function ContactPage() {
     <section className="contact-page">
       <div className="contact-container">
         <div className="contact-info">
-          <Link to="/" className="contact-back-btn">
-            ← Back to Home
-          </Link>
 
           <p className="contact-tag">Contact Us</p>
           <h1>Need help with your badminton gear?</h1>

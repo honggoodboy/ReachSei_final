@@ -235,13 +235,6 @@ export default function Products() {
 
   return (
     <section id="products" className="products">
-      {(isSearchPage || isCategoryPage) && (
-        <div className="products-back-wrapper">
-          <button className="products-back-btn" onClick={() => navigate(-1)}>
-            ← Back
-          </button>
-        </div>
-      )}
 
       {isSearchPage && (
         <>

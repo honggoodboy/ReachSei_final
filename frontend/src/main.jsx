@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { CartProvider } from "./context/CartContext";
 import { ToastProvider } from "./context/ToastContext";
 
@@ -32,6 +32,17 @@ import NewsletterPage from "./pages/NewsletterPage";
 import ContactPage from "./pages/ContactPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import ShopLayout from "./components/ShopLayout";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -39,25 +50,145 @@ ReactDOM.createRoot(document.getElementById("root")).render(
       <CartProvider>
         <WishlistProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
-              <Route path="/" element={<App />} />
-              <Route path="/products/:category" element={<Products />} />
-              <Route path="/products/detail/:id" element={<ProductDetail />} />
-              <Route path="/search" element={<Products />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              <Route
+                path="/"
+                element={
+                  <ShopLayout>
+                    <App />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/products/:category"
+                element={
+                  <ShopLayout>
+                    <Products />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/products/detail/:id"
+                element={
+                  <ShopLayout>
+                    <ProductDetail />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/search"
+                element={
+                  <ShopLayout>
+                    <Products />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/cart"
+                element={
+                  <ShopLayout>
+                    <CartPage />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ShopLayout>
+                    <CheckoutPage />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/login"
+                element={
+                  <ShopLayout>
+                    <Login />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/register"
+                element={
+                  <ShopLayout>
+                    <Register />
+                  </ShopLayout>
+                }
+              />
               <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/edit" element={<EditProfile />} />
-              <Route path="/profile/password" element={<ChangePassword />} />
-              <Route path="/newsletter" element={<NewsletterPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route
+                path="/my-orders"
+                element={
+                  <ShopLayout>
+                    <MyOrders />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/wishlist"
+                element={
+                  <ShopLayout>
+                    <WishlistPage />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ShopLayout>
+                    <Profile />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/profile/edit"
+                element={
+                  <ShopLayout>
+                    <EditProfile />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/profile/password"
+                element={
+                  <ShopLayout>
+                    <ChangePassword />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/newsletter"
+                element={
+                  <ShopLayout>
+                    <NewsletterPage />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/contact"
+                element={
+                  <ShopLayout>
+                    <ContactPage />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={
+                  <ShopLayout>
+                    <ForgotPassword />
+                  </ShopLayout>
+                }
+              />
+              <Route
+                path="/reset-password/:token"
+                element={
+                  <ShopLayout>
+                    <ResetPassword />
+                  </ShopLayout>
+                }
+              />
               <Route
                 path="/admin/dashboard"
                 element={

@@ -55,7 +55,6 @@ export default function EditProfile() {
       <div className="edit-profile-card">
         <div className="edit-profile-head">
           <h1>Edit Profile</h1>
-          <Link to="/profile">← Back</Link>
         </div>
 
         <form onSubmit={handleUpdate} className="edit-profile-form">
