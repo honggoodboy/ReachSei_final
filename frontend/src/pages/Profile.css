@@ -54,7 +54,37 @@
   text-decoration: none;
   font-weight: 800;
 }
+.profile-page {
+  position: relative;
+}
 
+.profile-back {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  color: #222;
+  font-family: "Outfit", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+
+  transition: 0.2s ease;
+}
+
+.profile-back span {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.profile-back:hover {
+  color: #a17a13;
+  transform: translateX(-2px);
+}
 .profile-card button {
   width: 100%;
   border: none;

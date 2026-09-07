@@ -18,6 +18,12 @@ export default function Profile() {
 
   return (
     <section className="profile-page">
+      {/* Back Button */}
+      <Link to="/" className="profile-back">
+        <span>←</span>
+        Back
+      </Link>
+
       <div className="profile-card">
         <div className="profile-avatar">
           {user.name?.charAt(0).toUpperCase()}
@@ -31,7 +37,6 @@ export default function Profile() {
           <Link to="/profile/password">Change Password</Link>
           <Link to="/my-orders">My Orders</Link>
           <Link to="/wishlist">Wishlist</Link>
-          <Link to="/">Continue Shopping</Link>
         </div>
 
         <button onClick={handleLogout}>Logout</button>

@@ -20,7 +20,10 @@
   font-family: "Syne", sans-serif;
   margin-bottom: 20px;
 }
-
+.auth-card p {
+  font-family: "Syne", sans-serif;
+  margin-bottom: 8px;
+}
 .auth-form {
   display: grid;
   gap: 14px;
