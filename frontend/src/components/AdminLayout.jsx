@@ -1,5 +1,33 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import "./AdminLayout.css";
+
+const navItems = [
+  {
+    label: "Dashboard",
+    path: "/admin/dashboard",
+    icon: "https://img.icons8.com/?size=100&id=zZWdn0zBfMOR&format=png&color=000000",
+  },
+  {
+    label: "Products",
+    path: "/admin/products",
+    icon: "https://img.icons8.com/?size=100&id=12091&format=png&color=000000",
+  },
+  {
+    label: "Add Product",
+    path: "/admin/products/new",
+    icon: "https://img.icons8.com/?size=100&id=84991&format=png&color=000000",
+  },
+  {
+    label: "Orders",
+    path: "/admin/orders",
+    icon: "https://img.icons8.com/?size=100&id=0DBkCUANmgoQ&format=png&color=000000",
+  },
+  {
+    label: "Reviews",
+    path: "/admin/reviews",
+    icon: "https://img.icons8.com/?size=100&id=60609&format=png&color=000000",
+  },
+];
 
 export default function AdminLayout({ children }) {
   const navigate = useNavigate();
@@ -11,21 +39,60 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="admin-layout">
-      <aside className="admin-sidebar">
-        <h2>Reachsei Admin</h2>
 
-        <nav>
-          <Link to="/admin/dashboard">Dashboard</Link>
-          <Link to="/admin/products">Products</Link>
-          <Link to="/admin/products/new">Add Product</Link>
-          <Link to="/admin/orders">Orders</Link>
-          <Link to="/admin/reviews">Reviews</Link>
+      {/* ================= DESKTOP SIDEBAR ================= */}
+      <aside className="admin-sidebar">
+
+        <div className="admin-sidebar-header">
+          <h2>Reachsei Admin</h2>
+        </div>
+
+        <nav className="admin-sidebar-nav">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `admin-sidebar-link ${isActive ? "active" : ""}`
+              }
+            >
+              <img src={item.icon} alt="" />
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
         </nav>
 
-        <button onClick={logout}>Logout</button>
+        <button className="admin-logout" onClick={logout}>
+          Logout
+        </button>
+
       </aside>
 
-      <main className="admin-main">{children}</main>
+
+      {/* ================= MAIN CONTENT ================= */}
+      <main className="admin-main">
+        {children}
+      </main>
+
+
+      {/* ================= MOBILE BOTTOM NAV ================= */}
+      <nav className="admin-mobile-nav">
+
+        {navItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `admin-mobile-link ${isActive ? "active" : ""}`
+            }
+          >
+            <img src={item.icon} alt="" />
+            <span>{item.label}</span>
+          </NavLink>
+        ))}
+
+      </nav>
+
     </div>
   );
 }

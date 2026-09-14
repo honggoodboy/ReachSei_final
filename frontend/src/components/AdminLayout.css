@@ -1,67 +1,357 @@
+/* =========================================
+   ADMIN LAYOUT
+========================================= */
+
 .admin-layout {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 260px 1fr;
-  background: var(--paper);
   width: 100%;
-  max-width: 100vw;
-  overflow-x: hidden;
+  display: flex;
+  background: #f7f8fa;
 }
 
+
+/* =========================================
+   DESKTOP SIDEBAR
+========================================= */
+
 .admin-sidebar {
-  background: var(--ink);
-  color: white;
-  padding: 24px;
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 250px;
+  height: 100vh;
+
+  background: #10182d;
+
+  display: flex;
+  flex-direction: column;
+
+  padding: 32px 20px;
+
+  z-index: 1000;
+}
+
+.admin-sidebar-header {
+  margin-bottom: 40px;
 }
 
 .admin-sidebar h2 {
+  margin: 0;
+
+  color: #ffffff;
+
   font-family: "Syne", sans-serif;
-  margin-bottom: 30px;
+  font-size: 24px;
+  font-weight: 700;
 }
 
-.admin-sidebar nav {
-  display: grid;
-  gap: 12px;
+
+/* =========================================
+   DESKTOP NAVIGATION
+========================================= */
+
+.admin-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.admin-sidebar a {
-  color: rgba(255,255,255,0.75);
-  text-decoration: none;
-  padding: 12px 14px;
-  border-radius: 12px;
-  font-weight: 600;
-}
-
-.admin-sidebar a:hover {
-  background: rgba(255,255,255,0.08);
-  color: white;
-}
-
-.admin-sidebar button {
-  margin-top: 30px;
+.admin-sidebar-link {
   width: 100%;
-  border: none;
-  background: var(--sun);
-  color: var(--ink);
-  padding: 12px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 14px 16px;
+
   border-radius: 12px;
-  font-weight: 800;
-  cursor: pointer;
+
+  color: #d8dce5;
+
+  text-decoration: none;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
+
+.admin-sidebar-link img {
+  width: 22px;
+  height: 22px;
+
+  object-fit: contain;
+
+  opacity: 0.8;
+}
+
+.admin-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.admin-sidebar-link.active {
+  background: #ffd000;
+  color: #10182d;
+}
+
+.admin-sidebar-link.active img {
+  opacity: 1;
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+.admin-logout {
+  margin-top: auto;
+
+  width: 100%;
+
+  padding: 14px 20px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: #ffd000;
+  color: #10182d;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: transform 0.2s ease,
+              background 0.2s ease;
+}
+
+.admin-logout:hover {
+  background: #f5c500;
+  transform: translateY(-1px);
+}
+
+
+/* =========================================
+   MAIN CONTENT
+========================================= */
 
 .admin-main {
-  padding: 0;
-  min-width: 0;
   width: 100%;
-  overflow-x: hidden;
+
+  min-height: 100vh;
+
+  margin-left: 250px;
+
+  padding: 40px;
 }
 
-@media (max-width: 800px) {
-  .admin-layout {
-    grid-template-columns: 1fr;
-  }
+
+/* =========================================
+   MOBILE NAVIGATION
+   Hidden on desktop
+========================================= */
+
+.admin-mobile-nav {
+  display: none;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
 
   .admin-sidebar {
-    position: static;
+    width: 220px;
+    padding: 28px 16px;
   }
-}
+
+  .admin-main {
+    margin-left: 220px;
+    padding: 30px 24px;
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 768px) {
+
+  /* Remove desktop sidebar */
+  .admin-sidebar {
+    display: none;
+  }
+
+
+  /* Main content becomes full width */
+  .admin-main {
+    width: 100%;
+
+    margin-left: 0;
+
+    min-height: 100vh;
+
+    padding: 24px 16px;
+
+    /*
+      Extra bottom space so content isn't
+      hidden behind bottom navigation.
+    */
+    padding-bottom: 100px;
+  }
+
+
+  /* =====================================
+     MOBILE BOTTOM NAV
+  ===================================== */
+
+  .admin-mobile-nav {
+    position: fixed;
+
+    left: 12px;
+    right: 12px;
+
+    bottom: calc(12px + env(safe-area-inset-bottom));
+
+    height: 72px;
+
+    display: flex;
+    align-items: stretch;
+
+    background: rgba(255, 255, 255, 0.97);
+
+    border: 1px solid rgba(16, 24, 45, 0.08);
+
+    border-radius: 20px;
+
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.12);
+
+    z-index: 9999;
+
+    overflow: hidden;
+
+    /*
+      iPhone safe area
+    */
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+
+  /* =====================================
+     MOBILE NAV ITEM
+  ===================================== */
+
+  .admin-mobile-link {
+    flex: 1;
+
+    min-width: 0;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 4px;
+
+    text-decoration: none;
+
+    color: #3d414a;
+
+    font-size: 10px;
+
+    font-weight: 600;
+
+    line-height: 1.1;
+
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+
+  .admin-mobile-link img {
+    width: 25px;
+    height: 25px;
+
+    object-fit: contain;
+
+    display: block;
+
+    transition: transform 0.2s ease;
+  }
+
+
+  .admin-mobile-link span {
+    max-width: 100%;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+  }
+
+
+  /* =====================================
+     ACTIVE MOBILE ITEM
+  ===================================== */
+
+  .admin-mobile-link.active {
+    color: #b38a00;
+  }
+
+  .admin-mobile-link.active img {
+    transform: translateY(-1px);
+  }
+
+
+  /* =====================================
+     HOVER
+  ===================================== */
+
+  .admin-mobile-link:active {
+    transform: scale(0.94);
+  }
+
+}
+
+
+/* =========================================
+   SMALL PHONES
+========================================= */
+
+@media (max-width: 380px) {
+
+  .admin-mobile-nav {
+    left: 8px;
+    right: 8px;
+
+    height: 68px;
+
+    border-radius: 18px;
+  }
+
+  .admin-mobile-link {
+    font-size: 9px;
+  }
+
+  .admin-mobile-link img {
+    width: 22px;
+    height: 22px;
+  }
+
+}
