@@ -15,7 +15,12 @@ export default function AdminOrders() {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/orders`);
+      const res = await axios.get(`${API_BASE_URL}/orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Fetch orders error:", error);
@@ -25,7 +30,6 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchOrders();
   }, []);
-
 
   /* =========================================================
      UPDATE ORDER STATUS
@@ -55,7 +59,6 @@ export default function AdminOrders() {
       alert("Failed to update order status.");
     }
   };
-
 
   /* =========================================================
      UPDATE PAYMENT STATUS
@@ -88,7 +91,6 @@ export default function AdminOrders() {
       alert("Failed to update payment status.");
     }
   };
-
 
   /* =========================================================
      UPDATE ADMIN NOTE
@@ -123,7 +125,6 @@ export default function AdminOrders() {
       alert("Failed to save admin note.");
     }
   };
-
 
   /* =========================================================
      DELETE ORDER
@@ -161,7 +162,6 @@ export default function AdminOrders() {
     }
   };
 
-
   /* =========================================================
      COPY PHONE
   ========================================================= */
@@ -175,7 +175,6 @@ export default function AdminOrders() {
       alert("Failed to copy phone number.");
     }
   };
-
 
   /* =========================================================
      TELEGRAM LINK
@@ -199,7 +198,6 @@ export default function AdminOrders() {
     return `https://t.me/${cleanPhone}`;
   };
 
-
   /* =========================================================
      ORDER ITEMS
   ========================================================= */
@@ -222,7 +220,6 @@ export default function AdminOrders() {
     }
   };
 
-
   /* =========================================================
      ITEM SIZE
   ========================================================= */
@@ -238,7 +235,6 @@ export default function AdminOrders() {
     );
   };
 
-
   /* =========================================================
      ITEM PRICE
   ========================================================= */
@@ -252,7 +248,6 @@ export default function AdminOrders() {
     );
   };
 
-
   /* =========================================================
      ITEM QUANTITY
   ========================================================= */
@@ -264,7 +259,6 @@ export default function AdminOrders() {
       1
     );
   };
-
 
   /* =========================================================
      IMAGE URL
@@ -290,7 +284,6 @@ export default function AdminOrders() {
     return `${API_BASE_URL}/${imagePath}`;
   };
 
-
   /* =========================================================
      PAYMENT STATUS CLASS
   ========================================================= */
@@ -298,7 +291,6 @@ export default function AdminOrders() {
   const getPaymentStatusClass = (status) => {
     return `payment-${status || "unpaid"}`;
   };
-
 
   /* =========================================================
      FORMAT TEXT
@@ -313,7 +305,6 @@ export default function AdminOrders() {
         letter.toUpperCase()
       );
   };
-
 
   /* =========================================================
      SUBTOTAL
@@ -337,7 +328,6 @@ export default function AdminOrders() {
     }, 0);
   };
 
-
   /* =========================================================
      DELIVERY FEE
   ========================================================= */
@@ -360,7 +350,6 @@ export default function AdminOrders() {
     return 2;
   };
 
-
   /* =========================================================
      TOTAL
   ========================================================= */
@@ -379,7 +368,6 @@ export default function AdminOrders() {
     );
   };
 
-
   /* =========================================================
      DATE
   ========================================================= */
@@ -393,7 +381,6 @@ export default function AdminOrders() {
       return "No date";
     }
   };
-
 
   /* =========================================================
      PAYMENT PROOF
@@ -436,7 +423,6 @@ export default function AdminOrders() {
     );
   };
 
-
   /* =========================================================
      EMPTY
   ========================================================= */
@@ -475,7 +461,6 @@ export default function AdminOrders() {
     );
   }
 
-
   /* =========================================================
      PAGE
   ========================================================= */
@@ -503,6 +488,7 @@ export default function AdminOrders() {
 
           <div className="orders-count">
             <strong>{orders.length}</strong>
+
             <span>
               {orders.length === 1
                 ? "Order"
@@ -510,7 +496,6 @@ export default function AdminOrders() {
             </span>
           </div>
         </header>
-
 
         {/* =================================================
             ORDERS
@@ -581,7 +566,6 @@ export default function AdminOrders() {
                   ×
                 </button>
 
-
                 {/* =================================================
                     ORDER HEADER
                 ================================================= */}
@@ -604,6 +588,7 @@ export default function AdminOrders() {
 
                       <div>
                         <span>Customer</span>
+
                         <strong>
                           {customerName}
                         </strong>
@@ -611,6 +596,7 @@ export default function AdminOrders() {
 
                       <div>
                         <span>Phone</span>
+
                         <strong>
                           {phone}
                         </strong>
@@ -618,6 +604,7 @@ export default function AdminOrders() {
 
                       <div>
                         <span>Total</span>
+
                         <strong className="order-total-preview">
                           ${total.toFixed(2)}
                         </strong>
@@ -626,7 +613,6 @@ export default function AdminOrders() {
                     </div>
 
                   </div>
-
 
                   {/* STATUS */}
 
@@ -638,6 +624,7 @@ export default function AdminOrders() {
                       }`}
                     >
                       <i />
+
                       {formatText(
                         order.status || "pending"
                       )}
@@ -651,13 +638,13 @@ export default function AdminOrders() {
                       }`}
                     >
                       <i />
+
                       {formatText(
                         paymentStatus
                       )}
                     </span>
 
                   </div>
-
 
                   {/* ACTIONS */}
 
@@ -716,7 +703,6 @@ export default function AdminOrders() {
 
                 </div>
 
-
                 {/* =================================================
                     DETAILS
                 ================================================= */}
@@ -725,7 +711,6 @@ export default function AdminOrders() {
                   <div className="admin-order-details">
 
                     <div className="details-grid">
-
 
                       {/* =================================================
                           CUSTOMER
@@ -749,11 +734,11 @@ export default function AdminOrders() {
                           </div>
                         </div>
 
-
                         <div className="customer-info">
 
                           <div className="info-row">
                             <span>Name</span>
+
                             <strong>
                               {customerName}
                             </strong>
@@ -761,6 +746,7 @@ export default function AdminOrders() {
 
                           <div className="info-row">
                             <span>Phone</span>
+
                             <strong>
                               {phone}
                             </strong>
@@ -768,6 +754,7 @@ export default function AdminOrders() {
 
                           <div className="info-row">
                             <span>Province</span>
+
                             <strong>
                               {order.province ||
                                 "No province"}
@@ -776,6 +763,7 @@ export default function AdminOrders() {
 
                           <div className="info-row info-row-address">
                             <span>Address</span>
+
                             <strong>
                               {order.address ||
                                 "No address"}
@@ -784,6 +772,7 @@ export default function AdminOrders() {
 
                           <div className="info-row">
                             <span>Order Date</span>
+
                             <strong>
                               {formatDate(
                                 order.created_at
@@ -792,7 +781,6 @@ export default function AdminOrders() {
                           </div>
 
                         </div>
-
 
                         {/* CONTACT */}
 
@@ -834,7 +822,6 @@ export default function AdminOrders() {
 
                       </div>
 
-
                       {/* =================================================
                           PAYMENT
                       ================================================= */}
@@ -857,11 +844,11 @@ export default function AdminOrders() {
                           </div>
                         </div>
 
-
                         <div className="payment-info">
 
                           <div className="info-row">
                             <span>Method</span>
+
                             <strong>
                               QR Payment
                             </strong>
@@ -878,6 +865,7 @@ export default function AdminOrders() {
                               }`}
                             >
                               <i />
+
                               {formatText(
                                 paymentStatus
                               )}
@@ -887,6 +875,7 @@ export default function AdminOrders() {
                           {paymentReference && (
                             <div className="info-row">
                               <span>Reference</span>
+
                               <strong>
                                 {paymentReference}
                               </strong>
@@ -895,11 +884,9 @@ export default function AdminOrders() {
 
                         </div>
 
-
                         {renderPaymentProof(
                           paymentProof
                         )}
-
 
                         {/* PAYMENT ACTIONS */}
 
@@ -948,7 +935,6 @@ export default function AdminOrders() {
 
                       </div>
 
-
                       {/* =================================================
                           ORDER SUMMARY
                       ================================================= */}
@@ -971,7 +957,6 @@ export default function AdminOrders() {
                           </div>
                         </div>
 
-
                         <div className="order-price-summary">
 
                           <div className="order-price-row">
@@ -984,7 +969,6 @@ export default function AdminOrders() {
                             </strong>
                           </div>
 
-
                           <div className="order-price-row delivery">
                             <span>
                               Delivery Fee
@@ -994,7 +978,6 @@ export default function AdminOrders() {
                               ${deliveryFee.toFixed(2)}
                             </strong>
                           </div>
-
 
                           <div className="order-price-row total">
                             <span>
@@ -1007,7 +990,6 @@ export default function AdminOrders() {
                           </div>
 
                         </div>
-
 
                         {/* ADMIN NOTE */}
 
@@ -1048,7 +1030,6 @@ export default function AdminOrders() {
 
                     </div>
 
-
                     {/* =================================================
                         ITEMS
                     ================================================= */}
@@ -1056,6 +1037,7 @@ export default function AdminOrders() {
                     <div className="order-items">
 
                       <div className="items-heading">
+
                         <div>
                           <span>
                             ORDER CONTENTS
@@ -1072,8 +1054,8 @@ export default function AdminOrders() {
                             ? "item"
                             : "items"}
                         </strong>
-                      </div>
 
+                      </div>
 
                       {items.length === 0 ? (
                         <div className="no-items">
@@ -1140,7 +1122,6 @@ export default function AdminOrders() {
 
                                   </div>
 
-
                                   {/* INFO */}
 
                                   <div className="order-item-info">
@@ -1175,7 +1156,6 @@ export default function AdminOrders() {
                                     </span>
 
                                   </div>
-
 
                                   {/* PRICE */}
 
