@@ -34,7 +34,7 @@ export default function Hero() {
               rel="noreferrer"
               className="btn-ghost"
             >
-              Get Deals ↗
+              Contact Us ↗
             </a>
           </div>
         </div>

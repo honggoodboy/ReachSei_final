@@ -59,7 +59,7 @@ const sendProductToGoogleSheet = async (product) => {
 /* =========================
    SYNC OLD PRODUCTS TO GOOGLE SHEET
 ========================= */
-router.post("/sync-to-sheet", async (req, res) => {
+router.post("/sync-to-sheet", verifyAdmin, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT *

@@ -4,6 +4,7 @@ import multer from "multer";
 import pool from "../db.js";
 import { sendTelegramMessage } from "../utils/telegram.js";
 import { paymentProofStorage } from "../utils/cloudinary.js";
+import { verifyAdmin, verifyUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -190,7 +191,7 @@ const sendOrderToGoogleSheet = async ({
    ADMIN
 ========================= */
 
-router.get("/", async (req, res) => {
+router.get("/", verifyAdmin, async (req, res) => {
   try {
     const ordersResult =
       await pool.query(`
@@ -363,335 +364,194 @@ router.post(
       }
 
       /* =========================
-         CALCULATE SUBTOTAL
-         SERVER SIDE
+         VERIFY PRICES FROM DB & CALCULATE SUBTOTAL
       ========================= */
 
-      const calculatedSubtotal =
-        items.reduce((sum, item) => {
-          const price =
-            Number(item.price) || 0;
+      let calculatedSubtotal = 0;
+      const verifiedItems = [];
 
-          const quantity =
-            Number(item.quantity) || 1;
+      for (const item of items) {
+        const productId = item.id || item.product_id;
+        const quantity = Number(item.quantity) || 1;
 
-          return (
-            sum +
-            price * quantity
-          );
-        }, 0);
+        if (!productId) {
+          return res.status(400).json({ error: "Invalid product ID in items" });
+        }
+
+        const productRes = await pool.query(
+          "SELECT id, name, price FROM products WHERE id = $1",
+          [productId]
+        );
+
+        if (productRes.rows.length === 0) {
+          return res.status(400).json({ error: `Product with ID ${productId} not found` });
+        }
+
+        const dbProduct = productRes.rows[0];
+        const dbPrice = Number(dbProduct.price) || 0;
+
+        calculatedSubtotal += dbPrice * quantity;
+
+        verifiedItems.push({
+          id: dbProduct.id,
+          name: dbProduct.name,
+          price: dbPrice,
+          quantity: quantity,
+          size: item.size || item.selectedSize || "",
+        });
+      }
 
       /* =========================
-         DELIVERY FEE
-         SERVER SIDE
+         DELIVERY FEE & TOTAL
       ========================= */
 
-      const calculatedDeliveryFee =
-        getDeliveryFee(province);
+      const calculatedDeliveryFee = getDeliveryFee(province);
+      const calculatedTotal = calculatedSubtotal + calculatedDeliveryFee;
 
       /* =========================
-         FINAL TOTAL
+         PAYMENT PROOF & ORDER CODE
       ========================= */
 
-      const calculatedTotal =
-        calculatedSubtotal +
-        calculatedDeliveryFee;
+      const paymentProof = req.file.path;
+      const paymentStatus = "pending_review";
+
+      const { dailyOrderNumber, orderCode } = await generateDailyOrderCode();
 
       /* =========================
-         PAYMENT PROOF
+         DATABASE TRANSACTION
       ========================= */
 
-      const paymentProof =
-        req.file.path;
+      const dbClient = await pool.connect();
+      let order;
 
-      const paymentStatus =
-        "pending_review";
+      try {
+        await dbClient.query("BEGIN");
 
-      /* =========================
-         ORDER CODE
-      ========================= */
-
-      const {
-        dailyOrderNumber,
-        orderCode,
-      } =
-        await generateDailyOrderCode();
-
-      /* =========================
-         INSERT ORDER
-      ========================= */
-
-      const orderResult =
-        await pool.query(
+        const orderResult = await dbClient.query(
           `
           INSERT INTO orders
           (
             user_id,
-
             total,
             delivery_fee,
-
             status,
-
             payment_status,
             payment_proof,
             payment_reference,
-
             admin_note,
-
             order_date,
             daily_order_number,
             order_code
           )
-
-          VALUES
-          (
-            $1,
-            $2,
-            $3,
-            $4,
-            $5,
-            $6,
-            $7,
-            $8,
-            CURRENT_DATE,
-            $9,
-            $10
-          )
-
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE, $9, $10)
           RETURNING *
           `,
           [
             userId || null,
-
             calculatedTotal,
             calculatedDeliveryFee,
-
             "pending",
-
             paymentStatus,
             paymentProof,
-            paymentReference?.trim() ||
-              null,
-
+            paymentReference?.trim() || null,
             null,
-
             dailyOrderNumber,
             orderCode,
           ]
         );
 
-      const order =
-        orderResult.rows[0];
+        order = orderResult.rows[0];
 
-      /* =========================
-         INSERT ORDER DETAILS
-      ========================= */
-
-      await pool.query(
-        `
-        INSERT INTO order_details
-        (
-          order_id,
-          full_name,
-          phone,
-          province,
-          address,
-          payment_method
-        )
-
-        VALUES
-        (
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6
-        )
-        `,
-        [
-          order.id,
-          fullName.trim(),
-          phone.trim(),
-          province.trim(),
-          address.trim(),
-          paymentMethod,
-        ]
-      );
-
-      /* =========================
-         INSERT ORDER ITEMS
-      ========================= */
-
-      for (const item of items) {
-        await pool.query(
+        await dbClient.query(
           `
-          INSERT INTO order_items
-          (
-            order_id,
-            product_id,
-            quantity,
-            price,
-            size
-          )
-
-          VALUES
-          (
-            $1,
-            $2,
-            $3,
-            $4,
-            $5
-          )
+          INSERT INTO order_details
+          (order_id, full_name, phone, province, address, payment_method)
+          VALUES ($1, $2, $3, $4, $5, $6)
           `,
           [
             order.id,
-
-            item.id,
-
-            Number(item.quantity) ||
-              1,
-
-            Number(item.price) ||
-              0,
-
-            item.size ||
-              item.selectedSize ||
-              "",
+            fullName.trim(),
+            phone.trim(),
+            province.trim(),
+            address.trim(),
+            paymentMethod,
           ]
         );
+
+        for (const item of verifiedItems) {
+          await dbClient.query(
+            `
+            INSERT INTO order_items
+            (order_id, product_id, quantity, price, size)
+            VALUES ($1, $2, $3, $4, $5)
+            `,
+            [
+              order.id,
+              item.id,
+              item.quantity,
+              item.price,
+              item.size,
+            ]
+          );
+        }
+
+        await dbClient.query("COMMIT");
+      } catch (transactionError) {
+        await dbClient.query("ROLLBACK");
+        throw transactionError;
+      } finally {
+        dbClient.release();
       }
 
       /* =========================
-         GOOGLE SHEET
+         GOOGLE SHEET SYNC
       ========================= */
 
       await sendOrderToGoogleSheet({
         orderId: order.id,
-        orderCode:
-          order.order_code,
-
-        fullName:
-          fullName.trim(),
-
-        phone:
-          phone.trim(),
-
-        province:
-          province.trim(),
-
-        address:
-          address.trim(),
-
+        orderCode: order.order_code,
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        province: province.trim(),
+        address: address.trim(),
         paymentMethod,
-
         paymentStatus,
-
-        paymentReference:
-          paymentReference?.trim() ||
-          null,
-
-        items,
-
-        subtotal:
-          calculatedSubtotal,
-
-        deliveryFee:
-          calculatedDeliveryFee,
-
-        total:
-          calculatedTotal,
-
+        paymentReference: paymentReference?.trim() || null,
+        items: verifiedItems,
+        subtotal: calculatedSubtotal,
+        deliveryFee: calculatedDeliveryFee,
+        total: calculatedTotal,
         status: "pending",
-
-        createdAt:
-          new Date().toLocaleString(),
+        createdAt: new Date().toLocaleString(),
       });
 
       /* =========================
-         TELEGRAM
+         TELEGRAM NOTIFICATION
       ========================= */
 
-      const telegramProductsText =
-        (items || [])
-          .map((item) => {
-            const size =
-              item.size ||
-              item.selectedSize ||
-              "No size";
-
-            const quantity =
-              Number(item.quantity) ||
-              1;
-
-            const price =
-              Number(item.price) ||
-              0;
-
-            return (
-              `• ${item.name || "Product"} | ` +
-              `Size: ${size} | ` +
-              `Qty: ${quantity} | ` +
-              `$${price.toFixed(2)}`
-            );
-          })
-          .join("\n");
+      const telegramProductsText = verifiedItems
+        .map((item) => {
+          const size = item.size || "No size";
+          return `• ${item.name || "Product"} | Size: ${size} | Qty: ${item.quantity} | $${item.price.toFixed(2)}`;
+        })
+        .join("\n");
 
       await sendTelegramMessage(`
 🛒 <b>New Reachsei Order</b>
 
-<b>Order:</b> ${
-        order.order_code ||
-        order.id
-      }
-
-<b>Database ID:</b> ${
-        order.id
-      }
-
-<b>Customer:</b> ${
-        fullName
-      }
-
-<b>Phone:</b> ${
-        phone
-      }
-
-<b>Province:</b> ${
-        province
-      }
-
-<b>Address:</b> ${
-        address
-      }
-
+<b>Order:</b> ${order.order_code || order.id}
+<b>Database ID:</b> ${order.id}
+<b>Customer:</b> ${fullName}
+<b>Phone:</b> ${phone}
+<b>Province:</b> ${province}
+<b>Address:</b> ${address}
 <b>Payment Method:</b> QR Payment
-
-<b>Payment Status:</b> ${
-        paymentStatus
-      }
-
-<b>Payment Reference:</b> ${
-        paymentReference ||
-        "None"
-      }
-
-<b>Subtotal:</b> $${
-        calculatedSubtotal.toFixed(2)
-      }
-
-<b>Delivery Fee:</b> $${
-        calculatedDeliveryFee.toFixed(2)
-      }
-
-<b>Total:</b> $${
-        calculatedTotal.toFixed(2)
-      }
-
-<b>Payment Proof:</b> ${
-        paymentProof
-      }
+<b>Payment Status:</b> ${paymentStatus}
+<b>Payment Reference:</b> ${paymentReference || "None"}
+<b>Subtotal:</b> $${calculatedSubtotal.toFixed(2)}
+<b>Delivery Fee:</b> $${calculatedDeliveryFee.toFixed(2)}
+<b>Total:</b> $${calculatedTotal.toFixed(2)}
+<b>Payment Proof:</b> ${paymentProof}
 
 <b>Products:</b>
 ${telegramProductsText}
@@ -702,17 +562,11 @@ ${telegramProductsText}
       ========================= */
 
       res.status(201).json({
-        message:
-          "Order placed successfully",
-
+        message: "Order placed successfully",
         order,
       });
     } catch (error) {
-      console.error(
-        "ORDER ERROR:",
-        error
-      );
-
+      console.error("ORDER ERROR:", error);
       res.status(500).json({
         error: error.message,
       });
@@ -726,94 +580,88 @@ ${telegramProductsText}
 
 router.get(
   "/user/:userId",
+  verifyUser,
   async (req, res) => {
     try {
-      const { userId } =
-        req.params;
+      const { userId } = req.params;
 
-      const ordersResult =
-        await pool.query(
-          `
-          SELECT
-            o.id,
-            o.user_id,
+      if (req.user.id !== Number(userId) && req.user.role !== "admin") {
+        return res.status(403).json({ error: "Access denied" });
+      }
 
-            o.order_date,
-            o.daily_order_number,
-            o.order_code,
+      const ordersResult = await pool.query(
+        `
+        SELECT
+          o.id,
+          o.user_id,
 
-            o.total,
-            o.delivery_fee,
+          o.order_date,
+          o.daily_order_number,
+          o.order_code,
 
-            o.status,
+          o.total,
+          o.delivery_fee,
 
-            o.payment_status,
-            o.payment_proof,
-            o.payment_reference,
+          o.status,
 
-            o.admin_note,
-            o.created_at,
+          o.payment_status,
+          o.payment_proof,
+          o.payment_reference,
 
-            od.full_name,
-            od.phone,
-            od.province,
-            od.address,
-            od.payment_method
+          o.admin_note,
+          o.created_at,
 
-          FROM orders o
+          od.full_name,
+          od.phone,
+          od.province,
+          od.address,
+          od.payment_method
 
-          LEFT JOIN order_details od
-            ON o.id = od.order_id
+        FROM orders o
 
-          WHERE o.user_id = $1
+        LEFT JOIN order_details od
+          ON o.id = od.order_id
 
-          ORDER BY o.created_at DESC
-          `,
-          [userId]
-        );
+        WHERE o.user_id = $1
 
-      const orders =
-        ordersResult.rows;
+        ORDER BY o.created_at DESC
+        `,
+        [userId]
+      );
+
+      const orders = ordersResult.rows;
 
       for (const order of orders) {
-        const itemsResult =
-          await pool.query(
-            `
-            SELECT
-              oi.id,
-              oi.product_id,
-              oi.quantity,
-              oi.price,
-              oi.size,
+        const itemsResult = await pool.query(
+          `
+          SELECT
+            oi.id,
+            oi.product_id,
+            oi.quantity,
+            oi.price,
+            oi.size,
 
-              p.name,
-              p.image,
-              p.category
+            p.name,
+            p.image,
+            p.category
 
-            FROM order_items oi
+          FROM order_items oi
 
-            LEFT JOIN products p
-              ON oi.product_id = p.id
+          LEFT JOIN products p
+            ON oi.product_id = p.id
 
-            WHERE oi.order_id = $1
-            `,
-            [order.id]
-          );
+          WHERE oi.order_id = $1
+          `,
+          [order.id]
+        );
 
-        order.items =
-          itemsResult.rows;
+        order.items = itemsResult.rows;
       }
 
       res.json(orders);
     } catch (error) {
-      console.error(
-        "GET USER ORDERS ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("GET USER ORDERS ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
@@ -824,13 +672,11 @@ router.get(
 
 router.put(
   "/:id/status",
+  verifyAdmin,
   async (req, res) => {
     try {
-      const { status } =
-        req.body;
-
-      const { id } =
-        req.params;
+      const { status } = req.body;
+      const { id } = req.params;
 
       const allowedStatus = [
         "pending",
@@ -840,59 +686,35 @@ router.put(
         "cancelled",
       ];
 
-      if (
-        !allowedStatus.includes(
-          status
-        )
-      ) {
+      if (!allowedStatus.includes(status)) {
         return res.status(400).json({
-          error:
-            "Invalid order status",
+          error: "Invalid order status",
         });
       }
 
-      const result =
-        await pool.query(
-          `
-          UPDATE orders
+      const result = await pool.query(
+        `
+        UPDATE orders
+        SET status = $1
+        WHERE id = $2
+        RETURNING *
+        `,
+        [status, id]
+      );
 
-          SET status = $1
-
-          WHERE id = $2
-
-          RETURNING *
-          `,
-          [
-            status,
-            id,
-          ]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
-          error:
-            "Order not found",
+          error: "Order not found",
         });
       }
 
       res.json({
-        message:
-          "Order status updated",
-
-        order:
-          result.rows[0],
+        message: "Order status updated",
+        order: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "UPDATE STATUS ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("UPDATE STATUS ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
@@ -903,13 +725,11 @@ router.put(
 
 router.put(
   "/:id/payment-status",
+  verifyAdmin,
   async (req, res) => {
     try {
-      const { id } =
-        req.params;
-
-      const { paymentStatus } =
-        req.body;
+      const { id } = req.params;
+      const { paymentStatus } = req.body;
 
       const allowedPaymentStatus = [
         "unpaid",
@@ -918,59 +738,35 @@ router.put(
         "rejected",
       ];
 
-      if (
-        !allowedPaymentStatus.includes(
-          paymentStatus
-        )
-      ) {
+      if (!allowedPaymentStatus.includes(paymentStatus)) {
         return res.status(400).json({
-          error:
-            "Invalid payment status",
+          error: "Invalid payment status",
         });
       }
 
-      const result =
-        await pool.query(
-          `
-          UPDATE orders
+      const result = await pool.query(
+        `
+        UPDATE orders
+        SET payment_status = $1
+        WHERE id = $2
+        RETURNING *
+        `,
+        [paymentStatus, id]
+      );
 
-          SET payment_status = $1
-
-          WHERE id = $2
-
-          RETURNING *
-          `,
-          [
-            paymentStatus,
-            id,
-          ]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
-          error:
-            "Order not found",
+          error: "Order not found",
         });
       }
 
       res.json({
-        message:
-          "Payment status updated",
-
-        order:
-          result.rows[0],
+        message: "Payment status updated",
+        order: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "UPDATE PAYMENT STATUS ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("UPDATE PAYMENT STATUS ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
@@ -981,56 +777,35 @@ router.put(
 
 router.put(
   "/:id/admin-note",
+  verifyAdmin,
   async (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
+      const { adminNote } = req.body;
 
-      const { adminNote } =
-        req.body;
+      const result = await pool.query(
+        `
+        UPDATE orders
+        SET admin_note = $1
+        WHERE id = $2
+        RETURNING *
+        `,
+        [adminNote || null, id]
+      );
 
-      const result =
-        await pool.query(
-          `
-          UPDATE orders
-
-          SET admin_note = $1
-
-          WHERE id = $2
-
-          RETURNING *
-          `,
-          [
-            adminNote || null,
-            id,
-          ]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
-          error:
-            "Order not found",
+          error: "Order not found",
         });
       }
 
       res.json({
-        message:
-          "Admin note updated",
-
-        order:
-          result.rows[0],
+        message: "Admin note updated",
+        order: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "UPDATE ADMIN NOTE ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("UPDATE ADMIN NOTE ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
@@ -1041,51 +816,35 @@ router.put(
 
 router.put(
   "/:id/cancel",
+  verifyUser,
   async (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
 
-      const result =
-        await pool.query(
-          `
-          UPDATE orders
+      const result = await pool.query(
+        `
+        UPDATE orders
+        SET status = 'cancelled'
+        WHERE id = $1
+          AND status = 'pending'
+        RETURNING *
+        `,
+        [id]
+      );
 
-          SET status = 'cancelled'
-
-          WHERE id = $1
-            AND status = 'pending'
-
-          RETURNING *
-          `,
-          [id]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(400).json({
-          error:
-            "Only pending orders can be cancelled",
+          error: "Only pending orders can be cancelled",
         });
       }
 
       res.json({
-        message:
-          "Order cancelled",
-
-        order:
-          result.rows[0],
+        message: "Order cancelled",
+        order: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "CANCEL ORDER ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("CANCEL ORDER ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
@@ -1096,10 +855,10 @@ router.put(
 
 router.delete(
   "/:id",
+  verifyAdmin,
   async (req, res) => {
     try {
-      const { id } =
-        req.params;
+      const { id } = req.params;
 
       await pool.query(
         `
@@ -1117,43 +876,28 @@ router.delete(
         [id]
       );
 
-      const result =
-        await pool.query(
-          `
-          DELETE FROM orders
+      const result = await pool.query(
+        `
+        DELETE FROM orders
+        WHERE id = $1
+        RETURNING *
+        `,
+        [id]
+      );
 
-          WHERE id = $1
-
-          RETURNING *
-          `,
-          [id]
-        );
-
-      if (
-        result.rows.length === 0
-      ) {
+      if (result.rows.length === 0) {
         return res.status(404).json({
-          error:
-            "Order not found",
+          error: "Order not found",
         });
       }
 
       res.json({
-        message:
-          "Order deleted successfully",
-
-        order:
-          result.rows[0],
+        message: "Order deleted successfully",
+        order: result.rows[0],
       });
     } catch (error) {
-      console.error(
-        "DELETE ORDER ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        error: error.message,
-      });
+      console.error("DELETE ORDER ERROR:", error);
+      res.status(500).json({ error: error.message });
     }
   }
 );
