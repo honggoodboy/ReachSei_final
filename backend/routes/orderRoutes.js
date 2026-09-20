@@ -932,43 +932,27 @@ router.post(
         order.order_code ||
         order.id
       }
-
 <b>Database ID:</b> ${
         order.id
       }
 
 <b>Customer:</b> ${fullName}
-
 <b>Phone:</b> ${phone}
-
 <b>Province:</b> ${province}
-
 <b>Address:</b> ${address}
-
 <b>Delivery Method:</b> ${
         deliveryMethod ===
         "pickup"
           ? "Pick Up"
           : "Delivery"
       }
-
 <b>Payment Method:</b> QR Payment
-
-<b>Payment Status:</b> ${
-        paymentStatus
-      }
-
 <b>Payment Reference:</b> ${
         paymentReference ||
         "None"
       }
-
-<b>Subtotal:</b> $${calculatedSubtotal.toFixed(2)}
-
 <b>Delivery Fee:</b> $${calculatedDeliveryFee.toFixed(2)}
-
 <b>Total:</b> $${calculatedTotal.toFixed(2)}
-
 <b>Payment Proof:</b> ${paymentProof}
 
 <b>Products:</b>
