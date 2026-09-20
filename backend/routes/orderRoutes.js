@@ -4,7 +4,10 @@ import multer from "multer";
 import pool from "../db.js";
 import { sendTelegramMessage } from "../utils/telegram.js";
 import { paymentProofStorage } from "../utils/cloudinary.js";
-import { verifyAdmin, verifyUser } from "../middleware/authMiddleware.js";
+import {
+  verifyAdmin,
+  verifyUser,
+} from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -16,7 +19,8 @@ const upload = multer({
   storage: paymentProofStorage,
 
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    // Maximum payment proof size = 10 MB
+    fileSize: 10 * 1024 * 1024,
   },
 
   fileFilter: (req, file, cb) => {
@@ -43,18 +47,43 @@ const upload = multer({
    PROVINCE DELIVERY FEE
 ========================= */
 
-const PHNOM_PENH = "រាជធានីភ្នំពេញ";
+const PHNOM_PENH =
+  "រាជធានីភ្នំពេញ";
 
-const getDeliveryFee = (province, deliveryMethod) => {
-  if (deliveryMethod === "pickup") {
+const getDeliveryFee = (
+  province,
+  deliveryMethod
+) => {
+
+  /*
+    PICK UP = FREE
+  */
+
+  if (
+    deliveryMethod === "pickup"
+  ) {
     return 0;
   }
 
-  const cleanProvince = String(province || "").trim();
+  const cleanProvince =
+    String(
+      province || ""
+    ).trim();
 
-  if (cleanProvince === PHNOM_PENH) {
+  /*
+    PHNOM PENH DELIVERY
+  */
+
+  if (
+    cleanProvince ===
+    PHNOM_PENH
+  ) {
     return 1.5;
   }
+
+  /*
+    OTHER PROVINCE DELIVERY
+  */
 
   return 2.0;
 };
@@ -63,218 +92,270 @@ const getDeliveryFee = (province, deliveryMethod) => {
    GENERATE DAILY ORDER CODE
 ========================= */
 
-const generateDailyOrderCode = async () => {
-  const todayCountResult = await pool.query(`
-    SELECT COUNT(*)
-    FROM orders
-    WHERE order_date = CURRENT_DATE
-  `);
+const generateDailyOrderCode =
+  async () => {
 
-  const dailyOrderNumber =
-    Number(todayCountResult.rows[0].count) + 1;
+    const todayCountResult =
+      await pool.query(`
+        SELECT COUNT(*)
+        FROM orders
+        WHERE order_date = CURRENT_DATE
+      `);
 
-  const today = new Date();
+    const dailyOrderNumber =
+      Number(
+        todayCountResult.rows[0]
+          .count
+      ) + 1;
 
-  const year = today.getFullYear();
+    const today =
+      new Date();
 
-  const month = String(
-    today.getMonth() + 1
-  ).padStart(2, "0");
+    const year =
+      today.getFullYear();
 
-  const day = String(
-    today.getDate()
-  ).padStart(2, "0");
+    const month =
+      String(
+        today.getMonth() + 1
+      ).padStart(2, "0");
 
-  const dateCode =
-    `${year}${month}${day}`;
+    const day =
+      String(
+        today.getDate()
+      ).padStart(2, "0");
 
-  const numberCode =
-    String(dailyOrderNumber).padStart(3, "0");
+    const dateCode =
+      `${year}${month}${day}`;
 
-  return {
-    dailyOrderNumber,
-    orderCode:
-      `RS-${dateCode}-${numberCode}`,
+    const numberCode =
+      String(
+        dailyOrderNumber
+      ).padStart(3, "0");
+
+    return {
+      dailyOrderNumber,
+
+      orderCode:
+        `RS-${dateCode}-${numberCode}`,
+    };
   };
-};
 
 /* =========================
    GOOGLE SHEET
 ========================= */
 
-const sendOrderToGoogleSheet = async ({
-  orderId,
-  orderCode,
-  fullName,
-  phone,
-  province,
-  address,
-  paymentMethod,
-  paymentStatus,
-  paymentReference,
-  items,
-  subtotal,
-  deliveryFee,
-  total,
-  status,
-  createdAt,
-}) => {
-  try {
-    const webAppUrl =
-      process.env.GOOGLE_SHEET_WEBAPP_URL;
+const sendOrderToGoogleSheet =
+  async ({
+    orderId,
+    orderCode,
+    fullName,
+    phone,
+    province,
+    address,
+    paymentMethod,
+    paymentStatus,
+    paymentReference,
+    items,
+    subtotal,
+    deliveryFee,
+    total,
+    status,
+    createdAt,
+  }) => {
 
-    if (!webAppUrl) {
-      console.log(
-        "GOOGLE_SHEET_WEBAPP_URL is missing"
+    try {
+
+      const webAppUrl =
+        process.env
+          .GOOGLE_SHEET_WEBAPP_URL;
+
+      if (!webAppUrl) {
+
+        console.log(
+          "GOOGLE_SHEET_WEBAPP_URL is missing"
+        );
+
+        return;
+      }
+
+      const productsText =
+        (items || [])
+          .map((item) => {
+
+            const size =
+              item.size ||
+              item.selectedSize ||
+              "No size";
+
+            const quantity =
+              Number(
+                item.quantity
+              ) || 1;
+
+            const price =
+              Number(
+                item.price
+              ) || 0;
+
+            return (
+              `${item.name || "Product"} | ` +
+              `Size: ${size} | ` +
+              `Qty: ${quantity} | ` +
+              `Price: $${price.toFixed(2)}`
+            );
+
+          })
+          .join("\n");
+
+      await axios.post(
+        webAppUrl,
+        {
+          type: "order",
+
+          orderId,
+          orderCode,
+
+          fullName,
+          phone,
+          province,
+          address,
+
+          paymentMethod,
+          paymentStatus,
+          paymentReference,
+
+          products:
+            productsText,
+
+          subtotal:
+            Number(
+              subtotal
+            ) || 0,
+
+          deliveryFee:
+            Number(
+              deliveryFee
+            ) || 0,
+
+          total:
+            Number(
+              total
+            ) || 0,
+
+          status,
+          createdAt,
+        }
       );
 
-      return;
+    } catch (error) {
+
+      console.error(
+        "GOOGLE SHEET ERROR:",
+        error.message
+      );
+
     }
-
-    const productsText = (items || [])
-      .map((item) => {
-        const size =
-          item.size ||
-          item.selectedSize ||
-          "No size";
-
-        const quantity =
-          Number(item.quantity) || 1;
-
-        const price =
-          Number(item.price) || 0;
-
-        return (
-          `${item.name || "Product"} | ` +
-          `Size: ${size} | ` +
-          `Qty: ${quantity} | ` +
-          `Price: $${price.toFixed(2)}`
-        );
-      })
-      .join("\n");
-
-    await axios.post(webAppUrl, {
-      type: "order",
-
-      orderId,
-      orderCode,
-
-      fullName,
-      phone,
-      province,
-      address,
-
-      paymentMethod,
-      paymentStatus,
-      paymentReference,
-
-      products: productsText,
-
-      subtotal:
-        Number(subtotal) || 0,
-
-      deliveryFee:
-        Number(deliveryFee) || 0,
-
-      total:
-        Number(total) || 0,
-
-      status,
-      createdAt,
-    });
-  } catch (error) {
-    console.error(
-      "GOOGLE SHEET ERROR:",
-      error.message
-    );
-  }
-};
+  };
 
 /* =========================
    GET ALL ORDERS
    ADMIN
 ========================= */
 
-router.get("/", verifyAdmin, async (req, res) => {
-  try {
-    const ordersResult =
-      await pool.query(`
-        SELECT
-          o.id,
-          o.order_date,
-          o.daily_order_number,
-          o.order_code,
+router.get(
+  "/",
+  verifyAdmin,
+  async (req, res) => {
 
-          o.total,
-          o.delivery_fee,
+    try {
 
-          o.status,
-
-          o.payment_status,
-          o.payment_proof,
-          o.payment_reference,
-
-          o.admin_note,
-          o.created_at,
-
-          od.full_name,
-          od.phone,
-          od.province,
-          od.address,
-          od.payment_method
-
-        FROM orders o
-
-        LEFT JOIN order_details od
-          ON o.id = od.order_id
-
-        ORDER BY o.created_at DESC
-      `);
-
-    const orders =
-      ordersResult.rows;
-
-    for (const order of orders) {
-      const itemsResult =
-        await pool.query(
-          `
+      const ordersResult =
+        await pool.query(`
           SELECT
-            oi.id,
-            oi.product_id,
-            oi.quantity,
-            oi.price,
-            oi.size,
+            o.id,
+            o.order_date,
+            o.daily_order_number,
+            o.order_code,
 
-            p.name,
-            p.image,
-            p.category
+            o.total,
+            o.delivery_fee,
 
-          FROM order_items oi
+            o.status,
 
-          LEFT JOIN products p
-            ON oi.product_id = p.id
+            o.payment_status,
+            o.payment_proof,
+            o.payment_reference,
 
-          WHERE oi.order_id = $1
-          `,
-          [order.id]
-        );
+            o.admin_note,
+            o.created_at,
 
-      order.items =
-        itemsResult.rows;
+            od.full_name,
+            od.phone,
+            od.province,
+            od.address,
+            od.payment_method
+
+          FROM orders o
+
+          LEFT JOIN order_details od
+            ON o.id = od.order_id
+
+          ORDER BY
+            o.created_at DESC
+        `);
+
+      const orders =
+        ordersResult.rows;
+
+      for (
+        const order
+        of orders
+      ) {
+
+        const itemsResult =
+          await pool.query(
+            `
+            SELECT
+              oi.id,
+              oi.product_id,
+              oi.quantity,
+              oi.price,
+              oi.size,
+
+              p.name,
+              p.image,
+              p.category
+
+            FROM order_items oi
+
+            LEFT JOIN products p
+              ON oi.product_id = p.id
+
+            WHERE oi.order_id = $1
+            `,
+            [order.id]
+          );
+
+        order.items =
+          itemsResult.rows;
+      }
+
+      res.json(orders);
+
+    } catch (error) {
+
+      console.error(
+        "GET ORDERS ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error: error.message,
+      });
+
     }
-
-    res.json(orders);
-  } catch (error) {
-    console.error(
-      "GET ORDERS ERROR:",
-      error
-    );
-
-    res.status(500).json({
-      error: error.message,
-    });
   }
-});
+);
 
 /* =========================
    CREATE ORDER
@@ -283,9 +364,13 @@ router.get("/", verifyAdmin, async (req, res) => {
 
 router.post(
   "/",
-  upload.single("paymentProof"),
+  upload.single(
+    "paymentProof"
+  ),
   async (req, res) => {
+
     try {
+
       let {
         userId,
         fullName,
@@ -294,6 +379,15 @@ router.post(
         address,
         paymentReference,
         items,
+
+        /*
+          IMPORTANT:
+          Receive pickup/delivery
+          from frontend.
+        */
+
+        deliveryMethod,
+
       } = req.body;
 
       /* =========================
@@ -301,210 +395,458 @@ router.post(
       ========================= */
 
       if (!fullName?.trim()) {
+
         return res.status(400).json({
-          error: "Full name is required",
+          error:
+            "Full name is required",
         });
+
       }
 
       if (!phone?.trim()) {
+
         return res.status(400).json({
-          error: "Phone number is required",
+          error:
+            "Phone number is required",
         });
+
       }
 
       if (!province?.trim()) {
+
         return res.status(400).json({
-          error: "Province is required",
+          error:
+            "Province is required",
         });
+
       }
 
       if (!address?.trim()) {
+
         return res.status(400).json({
-          error: "Delivery address is required",
+          error:
+            "Delivery address is required",
         });
+
       }
 
       /*
         Payment is QR / bank only.
-        Do not accept cash.
       */
 
-      const paymentMethod = "bank";
+      const paymentMethod =
+        "bank";
 
       if (!req.file) {
+
         return res.status(400).json({
           error:
             "Payment proof is required",
         });
+
+      }
+
+      /* =========================
+         NORMALIZE DELIVERY METHOD
+      ========================= */
+
+      deliveryMethod =
+        String(
+          deliveryMethod || ""
+        )
+          .trim()
+          .toLowerCase();
+
+      /*
+        Safety fallback:
+
+        If frontend sends Pick Up
+        but deliveryMethod is missing,
+        treat it as pickup.
+      */
+
+      if (
+        province.trim() ===
+        "Pick Up"
+      ) {
+
+        deliveryMethod =
+          "pickup";
+
+      }
+
+      /*
+        Everything else is delivery.
+      */
+
+      if (
+        deliveryMethod !==
+        "pickup"
+      ) {
+
+        deliveryMethod =
+          "delivery";
+
       }
 
       /* =========================
          PARSE ITEMS
       ========================= */
 
-      if (typeof items === "string") {
+      if (
+        typeof items ===
+        "string"
+      ) {
+
         try {
-          items = JSON.parse(items);
+
+          items =
+            JSON.parse(items);
+
         } catch {
+
           return res.status(400).json({
             error:
               "Invalid order items data",
           });
+
         }
+
       }
 
-      if (!Array.isArray(items)) {
+      if (
+        !Array.isArray(items)
+      ) {
+
         return res.status(400).json({
           error:
             "Order items are required",
         });
+
       }
 
-      if (items.length === 0) {
+      if (
+        items.length === 0
+      ) {
+
         return res.status(400).json({
           error:
             "Order must contain at least one item",
         });
+
       }
 
       /* =========================
-         VERIFY PRICES FROM DB & CALCULATE SUBTOTAL
+         VERIFY PRICES
+         FROM DATABASE
       ========================= */
 
-      let calculatedSubtotal = 0;
-      const verifiedItems = [];
+      let calculatedSubtotal =
+        0;
 
-      for (const item of items) {
-        const productId = item.id || item.product_id;
-        const quantity = Number(item.quantity) || 1;
+      const verifiedItems =
+        [];
+
+      for (
+        const item
+        of items
+      ) {
+
+        const productId =
+          item.id ||
+          item.product_id;
+
+        const quantity =
+          Number(
+            item.quantity
+          ) || 1;
 
         if (!productId) {
-          return res.status(400).json({ error: "Invalid product ID in items" });
+
+          return res.status(400).json({
+            error:
+              "Invalid product ID in items",
+          });
+
         }
 
-        const productRes = await pool.query(
-          "SELECT id, name, price FROM products WHERE id = $1",
-          [productId]
-        );
+        const productRes =
+          await pool.query(
+            `
+            SELECT
+              id,
+              name,
+              price
 
-        if (productRes.rows.length === 0) {
-          return res.status(400).json({ error: `Product with ID ${productId} not found` });
+            FROM products
+
+            WHERE id = $1
+            `,
+            [productId]
+          );
+
+        if (
+          productRes.rows
+            .length === 0
+        ) {
+
+          return res.status(400).json({
+            error:
+              `Product with ID ${productId} not found`,
+          });
+
         }
 
-        const dbProduct = productRes.rows[0];
-        const dbPrice = Number(dbProduct.price) || 0;
+        const dbProduct =
+          productRes.rows[0];
 
-        calculatedSubtotal += dbPrice * quantity;
+        const dbPrice =
+          Number(
+            dbProduct.price
+          ) || 0;
+
+        calculatedSubtotal +=
+          dbPrice * quantity;
 
         verifiedItems.push({
-          id: dbProduct.id,
-          name: dbProduct.name,
-          price: dbPrice,
-          quantity: quantity,
-          size: item.size || item.selectedSize || "",
+          id:
+            dbProduct.id,
+
+          name:
+            dbProduct.name,
+
+          price:
+            dbPrice,
+
+          quantity:
+            quantity,
+
+          size:
+            item.size ||
+            item.selectedSize ||
+            "",
         });
+
       }
 
       /* =========================
          DELIVERY FEE & TOTAL
       ========================= */
 
-      const calculatedDeliveryFee = getDeliveryFee(province);
-      const calculatedTotal = calculatedSubtotal + calculatedDeliveryFee;
+      /*
+        IMPORTANT FIX
+
+        Pickup:
+          $0.00
+
+        Phnom Penh delivery:
+          $1.50
+
+        Other province delivery:
+          $2.00
+      */
+
+      const calculatedDeliveryFee =
+        getDeliveryFee(
+          province,
+          deliveryMethod
+        );
+
+      const calculatedTotal =
+        calculatedSubtotal +
+        calculatedDeliveryFee;
 
       /* =========================
-         PAYMENT PROOF & ORDER CODE
+         PAYMENT PROOF
+         & ORDER CODE
       ========================= */
 
-      const paymentProof = req.file.path;
-      const paymentStatus = "pending_review";
+      const paymentProof =
+        req.file.path;
 
-      const { dailyOrderNumber, orderCode } = await generateDailyOrderCode();
+      const paymentStatus =
+        "pending_review";
+
+      const {
+        dailyOrderNumber,
+        orderCode,
+      } =
+        await generateDailyOrderCode();
 
       /* =========================
          DATABASE TRANSACTION
       ========================= */
 
-      const dbClient = await pool.connect();
+      const dbClient =
+        await pool.connect();
+
       let order;
 
       try {
-        await dbClient.query("BEGIN");
 
-        const orderResult = await dbClient.query(
-          `
-          INSERT INTO orders
-          (
-            user_id,
-            total,
-            delivery_fee,
-            status,
-            payment_status,
-            payment_proof,
-            payment_reference,
-            admin_note,
-            order_date,
-            daily_order_number,
-            order_code
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_DATE, $9, $10)
-          RETURNING *
-          `,
-          [
-            userId || null,
-            calculatedTotal,
-            calculatedDeliveryFee,
-            "pending",
-            paymentStatus,
-            paymentProof,
-            paymentReference?.trim() || null,
-            null,
-            dailyOrderNumber,
-            orderCode,
-          ]
+        await dbClient.query(
+          "BEGIN"
         );
 
-        order = orderResult.rows[0];
+        const orderResult =
+          await dbClient.query(
+            `
+            INSERT INTO orders
+            (
+              user_id,
+              total,
+              delivery_fee,
+              status,
+              payment_status,
+              payment_proof,
+              payment_reference,
+              admin_note,
+              order_date,
+              daily_order_number,
+              order_code
+            )
+
+            VALUES
+            (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5,
+              $6,
+              $7,
+              $8,
+              CURRENT_DATE,
+              $9,
+              $10
+            )
+
+            RETURNING *
+            `,
+            [
+              userId ||
+                null,
+
+              calculatedTotal,
+
+              calculatedDeliveryFee,
+
+              "pending",
+
+              paymentStatus,
+
+              paymentProof,
+
+              paymentReference
+                ?.trim() ||
+                null,
+
+              null,
+
+              dailyOrderNumber,
+
+              orderCode,
+            ]
+          );
+
+        order =
+          orderResult.rows[0];
 
         await dbClient.query(
           `
           INSERT INTO order_details
-          (order_id, full_name, phone, province, address, payment_method)
-          VALUES ($1, $2, $3, $4, $5, $6)
+          (
+            order_id,
+            full_name,
+            phone,
+            province,
+            address,
+            payment_method
+          )
+
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6
+          )
           `,
           [
             order.id,
+
             fullName.trim(),
+
             phone.trim(),
+
             province.trim(),
+
             address.trim(),
+
             paymentMethod,
           ]
         );
 
-        for (const item of verifiedItems) {
+        for (
+          const item
+          of verifiedItems
+        ) {
+
           await dbClient.query(
             `
             INSERT INTO order_items
-            (order_id, product_id, quantity, price, size)
-            VALUES ($1, $2, $3, $4, $5)
+            (
+              order_id,
+              product_id,
+              quantity,
+              price,
+              size
+            )
+
+            VALUES
+            (
+              $1,
+              $2,
+              $3,
+              $4,
+              $5
+            )
             `,
             [
               order.id,
+
               item.id,
+
               item.quantity,
+
               item.price,
+
               item.size,
             ]
           );
+
         }
 
-        await dbClient.query("COMMIT");
-      } catch (transactionError) {
-        await dbClient.query("ROLLBACK");
+        await dbClient.query(
+          "COMMIT"
+        );
+
+      } catch (
+        transactionError
+      ) {
+
+        await dbClient.query(
+          "ROLLBACK"
+        );
+
         throw transactionError;
+
       } finally {
+
         dbClient.release();
+
       }
 
       /* =========================
@@ -512,49 +854,121 @@ router.post(
       ========================= */
 
       await sendOrderToGoogleSheet({
-        orderId: order.id,
-        orderCode: order.order_code,
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        province: province.trim(),
-        address: address.trim(),
+
+        orderId:
+          order.id,
+
+        orderCode:
+          order.order_code,
+
+        fullName:
+          fullName.trim(),
+
+        phone:
+          phone.trim(),
+
+        province:
+          province.trim(),
+
+        address:
+          address.trim(),
+
         paymentMethod,
+
         paymentStatus,
-        paymentReference: paymentReference?.trim() || null,
-        items: verifiedItems,
-        subtotal: calculatedSubtotal,
-        deliveryFee: calculatedDeliveryFee,
-        total: calculatedTotal,
-        status: "pending",
-        createdAt: new Date().toLocaleString(),
+
+        paymentReference:
+          paymentReference
+            ?.trim() ||
+          null,
+
+        items:
+          verifiedItems,
+
+        subtotal:
+          calculatedSubtotal,
+
+        deliveryFee:
+          calculatedDeliveryFee,
+
+        total:
+          calculatedTotal,
+
+        status:
+          "pending",
+
+        createdAt:
+          new Date()
+            .toLocaleString(),
+
       });
 
       /* =========================
          TELEGRAM NOTIFICATION
       ========================= */
 
-      const telegramProductsText = verifiedItems
-        .map((item) => {
-          const size = item.size || "No size";
-          return `• ${item.name || "Product"} | Size: ${size} | Qty: ${item.quantity} | $${item.price.toFixed(2)}`;
-        })
-        .join("\n");
+      const telegramProductsText =
+        verifiedItems
+          .map((item) => {
+
+            const size =
+              item.size ||
+              "No size";
+
+            return (
+              `• ${item.name || "Product"} | ` +
+              `Size: ${size} | ` +
+              `Qty: ${item.quantity} | ` +
+              `$${item.price.toFixed(2)}`
+            );
+
+          })
+          .join("\n");
 
       await sendTelegramMessage(`
 🛒 <b>New Reachsei Order</b>
 
-<b>Order:</b> ${order.order_code || order.id}
-<b>Database ID:</b> ${order.id}
+<b>Order:</b> ${
+        order.order_code ||
+        order.id
+      }
+
+<b>Database ID:</b> ${
+        order.id
+      }
+
 <b>Customer:</b> ${fullName}
+
 <b>Phone:</b> ${phone}
+
 <b>Province:</b> ${province}
+
 <b>Address:</b> ${address}
+
+<b>Delivery Method:</b> ${
+        deliveryMethod ===
+        "pickup"
+          ? "Pick Up"
+          : "Delivery"
+      }
+
 <b>Payment Method:</b> QR Payment
-<b>Payment Status:</b> ${paymentStatus}
-<b>Payment Reference:</b> ${paymentReference || "None"}
+
+<b>Payment Status:</b> ${
+        paymentStatus
+      }
+
+<b>Payment Reference:</b> ${
+        paymentReference ||
+        "None"
+      }
+
 <b>Subtotal:</b> $${calculatedSubtotal.toFixed(2)}
+
 <b>Delivery Fee:</b> $${calculatedDeliveryFee.toFixed(2)}
+
 <b>Total:</b> $${calculatedTotal.toFixed(2)}
+
 <b>Payment Proof:</b> ${paymentProof}
 
 <b>Products:</b>
@@ -566,15 +980,28 @@ ${telegramProductsText}
       ========================= */
 
       res.status(201).json({
-        message: "Order placed successfully",
+
+        message:
+          "Order placed successfully",
+
         order,
+
       });
+
     } catch (error) {
-      console.error("ORDER ERROR:", error);
+
+      console.error(
+        "ORDER ERROR:",
+        error
+      );
+
       res.status(500).json({
-        error: error.message,
+        error:
+          error.message,
       });
+
     }
+
   }
 );
 
@@ -586,87 +1013,121 @@ router.get(
   "/user/:userId",
   verifyUser,
   async (req, res) => {
-    try {
-      const { userId } = req.params;
 
-      if (req.user.id !== Number(userId) && req.user.role !== "admin") {
-        return res.status(403).json({ error: "Access denied" });
+    try {
+
+      const {
+        userId,
+      } = req.params;
+
+      if (
+        req.user.id !==
+          Number(userId) &&
+        req.user.role !==
+          "admin"
+      ) {
+
+        return res.status(403).json({
+          error:
+            "Access denied",
+        });
+
       }
 
-      const ordersResult = await pool.query(
-        `
-        SELECT
-          o.id,
-          o.user_id,
-
-          o.order_date,
-          o.daily_order_number,
-          o.order_code,
-
-          o.total,
-          o.delivery_fee,
-
-          o.status,
-
-          o.payment_status,
-          o.payment_proof,
-          o.payment_reference,
-
-          o.admin_note,
-          o.created_at,
-
-          od.full_name,
-          od.phone,
-          od.province,
-          od.address,
-          od.payment_method
-
-        FROM orders o
-
-        LEFT JOIN order_details od
-          ON o.id = od.order_id
-
-        WHERE o.user_id = $1
-
-        ORDER BY o.created_at DESC
-        `,
-        [userId]
-      );
-
-      const orders = ordersResult.rows;
-
-      for (const order of orders) {
-        const itemsResult = await pool.query(
+      const ordersResult =
+        await pool.query(
           `
           SELECT
-            oi.id,
-            oi.product_id,
-            oi.quantity,
-            oi.price,
-            oi.size,
+            o.id,
+            o.user_id,
 
-            p.name,
-            p.image,
-            p.category
+            o.order_date,
+            o.daily_order_number,
+            o.order_code,
 
-          FROM order_items oi
+            o.total,
+            o.delivery_fee,
 
-          LEFT JOIN products p
-            ON oi.product_id = p.id
+            o.status,
 
-          WHERE oi.order_id = $1
+            o.payment_status,
+            o.payment_proof,
+            o.payment_reference,
+
+            o.admin_note,
+            o.created_at,
+
+            od.full_name,
+            od.phone,
+            od.province,
+            od.address,
+            od.payment_method
+
+          FROM orders o
+
+          LEFT JOIN order_details od
+            ON o.id = od.order_id
+
+          WHERE o.user_id = $1
+
+          ORDER BY
+            o.created_at DESC
           `,
-          [order.id]
+          [userId]
         );
 
-        order.items = itemsResult.rows;
+      const orders =
+        ordersResult.rows;
+
+      for (
+        const order
+        of orders
+      ) {
+
+        const itemsResult =
+          await pool.query(
+            `
+            SELECT
+              oi.id,
+              oi.product_id,
+              oi.quantity,
+              oi.price,
+              oi.size,
+
+              p.name,
+              p.image,
+              p.category
+
+            FROM order_items oi
+
+            LEFT JOIN products p
+              ON oi.product_id = p.id
+
+            WHERE oi.order_id = $1
+            `,
+            [order.id]
+          );
+
+        order.items =
+          itemsResult.rows;
       }
 
       res.json(orders);
+
     } catch (error) {
-      console.error("GET USER ORDERS ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "GET USER ORDERS ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 
@@ -678,9 +1139,16 @@ router.put(
   "/:id/status",
   verifyAdmin,
   async (req, res) => {
+
     try {
-      const { status } = req.body;
-      const { id } = req.params;
+
+      const {
+        status,
+      } = req.body;
+
+      const {
+        id,
+      } = req.params;
 
       const allowedStatus = [
         "pending",
@@ -690,36 +1158,72 @@ router.put(
         "cancelled",
       ];
 
-      if (!allowedStatus.includes(status)) {
+      if (
+        !allowedStatus.includes(
+          status
+        )
+      ) {
+
         return res.status(400).json({
-          error: "Invalid order status",
+          error:
+            "Invalid order status",
         });
+
       }
 
-      const result = await pool.query(
-        `
-        UPDATE orders
-        SET status = $1
-        WHERE id = $2
-        RETURNING *
-        `,
-        [status, id]
-      );
+      const result =
+        await pool.query(
+          `
+          UPDATE orders
 
-      if (result.rows.length === 0) {
+          SET status = $1
+
+          WHERE id = $2
+
+          RETURNING *
+          `,
+          [
+            status,
+            id,
+          ]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+
         return res.status(404).json({
-          error: "Order not found",
+          error:
+            "Order not found",
         });
+
       }
 
       res.json({
-        message: "Order status updated",
-        order: result.rows[0],
+
+        message:
+          "Order status updated",
+
+        order:
+          result.rows[0],
+
       });
+
     } catch (error) {
-      console.error("UPDATE STATUS ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "UPDATE STATUS ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 
@@ -731,9 +1235,16 @@ router.put(
   "/:id/payment-status",
   verifyAdmin,
   async (req, res) => {
+
     try {
-      const { id } = req.params;
-      const { paymentStatus } = req.body;
+
+      const {
+        id,
+      } = req.params;
+
+      const {
+        paymentStatus,
+      } = req.body;
 
       const allowedPaymentStatus = [
         "unpaid",
@@ -742,36 +1253,72 @@ router.put(
         "rejected",
       ];
 
-      if (!allowedPaymentStatus.includes(paymentStatus)) {
+      if (
+        !allowedPaymentStatus.includes(
+          paymentStatus
+        )
+      ) {
+
         return res.status(400).json({
-          error: "Invalid payment status",
+          error:
+            "Invalid payment status",
         });
+
       }
 
-      const result = await pool.query(
-        `
-        UPDATE orders
-        SET payment_status = $1
-        WHERE id = $2
-        RETURNING *
-        `,
-        [paymentStatus, id]
-      );
+      const result =
+        await pool.query(
+          `
+          UPDATE orders
 
-      if (result.rows.length === 0) {
+          SET payment_status = $1
+
+          WHERE id = $2
+
+          RETURNING *
+          `,
+          [
+            paymentStatus,
+            id,
+          ]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+
         return res.status(404).json({
-          error: "Order not found",
+          error:
+            "Order not found",
         });
+
       }
 
       res.json({
-        message: "Payment status updated",
-        order: result.rows[0],
+
+        message:
+          "Payment status updated",
+
+        order:
+          result.rows[0],
+
       });
+
     } catch (error) {
-      console.error("UPDATE PAYMENT STATUS ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "UPDATE PAYMENT STATUS ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 
@@ -783,34 +1330,71 @@ router.put(
   "/:id/admin-note",
   verifyAdmin,
   async (req, res) => {
+
     try {
-      const { id } = req.params;
-      const { adminNote } = req.body;
 
-      const result = await pool.query(
-        `
-        UPDATE orders
-        SET admin_note = $1
-        WHERE id = $2
-        RETURNING *
-        `,
-        [adminNote || null, id]
-      );
+      const {
+        id,
+      } = req.params;
 
-      if (result.rows.length === 0) {
+      const {
+        adminNote,
+      } = req.body;
+
+      const result =
+        await pool.query(
+          `
+          UPDATE orders
+
+          SET admin_note = $1
+
+          WHERE id = $2
+
+          RETURNING *
+          `,
+          [
+            adminNote ||
+              null,
+            id,
+          ]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+
         return res.status(404).json({
-          error: "Order not found",
+          error:
+            "Order not found",
         });
+
       }
 
       res.json({
-        message: "Admin note updated",
-        order: result.rows[0],
+
+        message:
+          "Admin note updated",
+
+        order:
+          result.rows[0],
+
       });
+
     } catch (error) {
-      console.error("UPDATE ADMIN NOTE ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "UPDATE ADMIN NOTE ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 
@@ -822,34 +1406,64 @@ router.put(
   "/:id/cancel",
   verifyUser,
   async (req, res) => {
+
     try {
-      const { id } = req.params;
 
-      const result = await pool.query(
-        `
-        UPDATE orders
-        SET status = 'cancelled'
-        WHERE id = $1
-          AND status = 'pending'
-        RETURNING *
-        `,
-        [id]
-      );
+      const {
+        id,
+      } = req.params;
 
-      if (result.rows.length === 0) {
+      const result =
+        await pool.query(
+          `
+          UPDATE orders
+
+          SET status = 'cancelled'
+
+          WHERE id = $1
+            AND status = 'pending'
+
+          RETURNING *
+          `,
+          [id]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+
         return res.status(400).json({
-          error: "Only pending orders can be cancelled",
+          error:
+            "Only pending orders can be cancelled",
         });
+
       }
 
       res.json({
-        message: "Order cancelled",
-        order: result.rows[0],
+
+        message:
+          "Order cancelled",
+
+        order:
+          result.rows[0],
+
       });
+
     } catch (error) {
-      console.error("CANCEL ORDER ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "CANCEL ORDER ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 
@@ -861,12 +1475,17 @@ router.delete(
   "/:id",
   verifyAdmin,
   async (req, res) => {
+
     try {
-      const { id } = req.params;
+
+      const {
+        id,
+      } = req.params;
 
       await pool.query(
         `
         DELETE FROM order_items
+
         WHERE order_id = $1
         `,
         [id]
@@ -875,34 +1494,60 @@ router.delete(
       await pool.query(
         `
         DELETE FROM order_details
+
         WHERE order_id = $1
         `,
         [id]
       );
 
-      const result = await pool.query(
-        `
-        DELETE FROM orders
-        WHERE id = $1
-        RETURNING *
-        `,
-        [id]
-      );
+      const result =
+        await pool.query(
+          `
+          DELETE FROM orders
 
-      if (result.rows.length === 0) {
+          WHERE id = $1
+
+          RETURNING *
+          `,
+          [id]
+        );
+
+      if (
+        result.rows.length ===
+        0
+      ) {
+
         return res.status(404).json({
-          error: "Order not found",
+          error:
+            "Order not found",
         });
+
       }
 
       res.json({
-        message: "Order deleted successfully",
-        order: result.rows[0],
+
+        message:
+          "Order deleted successfully",
+
+        order:
+          result.rows[0],
+
       });
+
     } catch (error) {
-      console.error("DELETE ORDER ERROR:", error);
-      res.status(500).json({ error: error.message });
+
+      console.error(
+        "DELETE ORDER ERROR:",
+        error
+      );
+
+      res.status(500).json({
+        error:
+          error.message,
+      });
+
     }
+
   }
 );
 

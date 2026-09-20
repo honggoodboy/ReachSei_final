@@ -62,6 +62,7 @@ export default function CheckoutPage() {
   /*
     =========================
     DELIVERY FEE
+    Pick Up = $0.00
     Phnom Penh = $1.50
     Other provinces = $2.00
   =========================
@@ -72,7 +73,9 @@ export default function CheckoutPage() {
   );
 
   const deliveryFee = selectedProvince?.fee ?? 0;
-  const checkoutTotal = Number(cartTotal || 0) + deliveryFee;
+
+  const checkoutTotal =
+    Number(cartTotal || 0) + deliveryFee;
 
   /*
     =========================
@@ -90,10 +93,16 @@ export default function CheckoutPage() {
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener(
+      "mousedown",
+      handleClickOutside
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutside
+      );
     };
   }, []);
 
@@ -151,16 +160,29 @@ export default function CheckoutPage() {
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      setMessage("Please upload only JPG, PNG, or WEBP image.");
+      setMessage(
+        "Please upload only JPG, PNG, or WEBP image."
+      );
+
       e.target.value = "";
       setPaymentProof(null);
+
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage("Payment proof image must be less than 5MB.");
+    /*
+      Maximum payment proof size:
+      10 MB
+    */
+
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage(
+        "Payment proof image must be less than 10MB."
+      );
+
       e.target.value = "";
       setPaymentProof(null);
+
       return;
     }
 
@@ -180,9 +202,14 @@ export default function CheckoutPage() {
     name: item.name,
     image: item.image,
     category: item.category,
-    size: item.size || item.selectedSize || "",
-    price: Number(item.price) || 0,
-    quantity: Number(item.quantity) || 1,
+    size:
+      item.size ||
+      item.selectedSize ||
+      "",
+    price:
+      Number(item.price) || 0,
+    quantity:
+      Number(item.quantity) || 1,
     subtotal:
       (Number(item.price) || 0) *
       (Number(item.quantity) || 1),
@@ -202,32 +229,44 @@ export default function CheckoutPage() {
     );
 
     if (cartItems.length === 0) {
-      setMessage("Your cart is empty.");
+      setMessage(
+        "Your cart is empty."
+      );
       return;
     }
 
     if (!formData.fullName.trim()) {
-      setMessage("Please enter your full name.");
+      setMessage(
+        "Please enter your full name."
+      );
       return;
     }
 
     if (!formData.phone.trim()) {
-      setMessage("Please enter your phone number.");
+      setMessage(
+        "Please enter your phone number."
+      );
       return;
     }
 
     if (!formData.province) {
-      setMessage("Please select your province.");
+      setMessage(
+        "Please select your province."
+      );
       return;
     }
 
     if (!formData.address.trim()) {
-      setMessage("Please enter your delivery address.");
+      setMessage(
+        "Please enter your delivery address."
+      );
       return;
     }
 
     if (!paymentProof) {
-      setMessage("Please upload your payment screenshot.");
+      setMessage(
+        "Please upload your payment screenshot."
+      );
       return;
     }
 
@@ -235,10 +274,19 @@ export default function CheckoutPage() {
       setLoading(true);
       setMessage("");
 
-      const submitData = new FormData();
+      const submitData =
+        new FormData();
 
-      // Guest checkout supported
-      submitData.append("userId", user?.id || "");
+      /*
+        =========================
+        BASIC CUSTOMER DATA
+      =========================
+      */
+
+      submitData.append(
+        "userId",
+        user?.id || ""
+      );
 
       submitData.append(
         "fullName",
@@ -255,18 +303,51 @@ export default function CheckoutPage() {
         formData.province.trim()
       );
 
+      /*
+        =========================
+        DELIVERY METHOD
+        =========================
+
+        Pick Up:
+          deliveryMethod = pickup
+
+        Normal delivery:
+          deliveryMethod = delivery
+      */
+
+      submitData.append(
+        "deliveryMethod",
+        formData.province === "Pick Up"
+          ? "pickup"
+          : "delivery"
+      );
+
       submitData.append(
         "address",
         formData.address.trim()
       );
 
-      // QR / bank payment only
-      submitData.append("paymentMethod", "bank");
+      /*
+        =========================
+        PAYMENT
+      =========================
+      */
+
+      submitData.append(
+        "paymentMethod",
+        "bank"
+      );
 
       submitData.append(
         "paymentReference",
         formData.paymentReference.trim()
       );
+
+      /*
+        =========================
+        PRODUCTS
+      =========================
+      */
 
       submitData.append(
         "items",
@@ -274,13 +355,19 @@ export default function CheckoutPage() {
       );
 
       /*
-        Send these values for frontend/backend compatibility.
-        Backend will recalculate them securely.
+        =========================
+        FRONTEND TOTALS
+        =========================
+
+        Backend recalculates these
+        securely from database prices.
       */
 
       submitData.append(
         "subtotal",
-        Number(cartTotal || 0).toFixed(2)
+        Number(
+          cartTotal || 0
+        ).toFixed(2)
       );
 
       submitData.append(
@@ -293,22 +380,43 @@ export default function CheckoutPage() {
         checkoutTotal.toFixed(2)
       );
 
+      /*
+        =========================
+        PAYMENT PROOF
+      =========================
+      */
+
       submitData.append(
         "paymentProof",
         paymentProof
       );
+
+      /*
+        =========================
+        SEND ORDER
+      =========================
+      */
 
       await axios.post(
         `${API_BASE_URL}/orders`,
         submitData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type":
+              "multipart/form-data",
           },
         }
       );
 
-      setMessage("Order placed successfully!");
+      /*
+        =========================
+        SUCCESS
+      =========================
+      */
+
+      setMessage(
+        "Order placed successfully!"
+      );
 
       clearCart();
 
@@ -332,13 +440,18 @@ export default function CheckoutPage() {
           navigate("/");
         }
       }, 1500);
+
     } catch (error) {
-      console.error("Checkout error:", error);
+      console.error(
+        "Checkout error:",
+        error
+      );
 
       setMessage(
         error.response?.data?.error ||
           "Failed to place order."
       );
+
     } finally {
       setLoading(false);
     }
@@ -350,15 +463,18 @@ export default function CheckoutPage() {
   =========================
   */
 
-  const filteredProvinces = PROVINCES.filter(
-    (province) =>
+  const filteredProvinces =
+    PROVINCES.filter((province) =>
       province.name
         .toLowerCase()
-        .includes(provinceSearch.toLowerCase())
-  );
+        .includes(
+          provinceSearch.toLowerCase()
+        )
+    );
 
   return (
     <section className="checkout-page">
+
       <div className="checkout-container">
 
         {/* =========================
@@ -368,15 +484,19 @@ export default function CheckoutPage() {
         <div className="checkout-form-card">
 
           <div className="checkout-head">
+
             <Link
               to="/cart"
               className="back-link"
             >
               ← Back to Cart
             </Link>
+
           </div>
 
-          <h1>Checkout</h1>
+          <h1>
+            Checkout
+          </h1>
 
           <form
             id="checkout-form"
@@ -384,59 +504,87 @@ export default function CheckoutPage() {
             className="checkout-form"
           >
 
-            {/* FULL NAME */}
+            {/* =========================
+                FULL NAME
+            ========================= */}
 
             <div className="checkout-field">
+
               <label>
-                Full Name <span>*</span>
+                Full Name{" "}
+                <span>*</span>
               </label>
 
               <input
                 type="text"
                 name="fullName"
                 placeholder="Enter your full name"
-                value={formData.fullName}
-                onChange={handleChange}
+                value={
+                  formData.fullName
+                }
+                onChange={
+                  handleChange
+                }
                 required
               />
+
             </div>
 
-            {/* PHONE */}
+            {/* =========================
+                PHONE
+            ========================= */}
 
             <div className="checkout-field">
+
               <label>
-                Phone Number <span>*</span>
+                Phone Number{" "}
+                <span>*</span>
               </label>
 
               <input
                 type="tel"
                 name="phone"
                 placeholder="Enter your phone number"
-                value={formData.phone}
-                onChange={handleChange}
+                value={
+                  formData.phone
+                }
+                onChange={
+                  handleChange
+                }
                 required
               />
+
             </div>
 
-            {/* PROVINCE */}
+            {/* =========================
+                PROVINCE
+            ========================= */}
 
             <div
               className="checkout-field province-field"
               ref={provinceRef}
             >
+
               <label>
-                Province <span>*</span>
+                Province{" "}
+                <span>*</span>
               </label>
 
               <button
                 type="button"
                 className={`province-selector ${
-                  provinceOpen ? "active" : ""
+                  provinceOpen
+                    ? "active"
+                    : ""
                 }`}
                 onClick={() =>
-                  setProvinceOpen((prev) => !prev)
+                  setProvinceOpen(
+                    (prev) =>
+                      !prev
+                  )
                 }
               >
+
                 <span
                   className={
                     formData.province
@@ -449,8 +597,11 @@ export default function CheckoutPage() {
                 </span>
 
                 <span className="province-arrow">
-                  {provinceOpen ? "▲" : "▼"}
+                  {provinceOpen
+                    ? "▲"
+                    : "▼"}
                 </span>
+
               </button>
 
               {provinceOpen && (
@@ -467,7 +618,9 @@ export default function CheckoutPage() {
                     <input
                       type="text"
                       placeholder="Search province..."
-                      value={provinceSearch}
+                      value={
+                        provinceSearch
+                      }
                       onChange={(e) =>
                         setProvinceSearch(
                           e.target.value
@@ -480,7 +633,8 @@ export default function CheckoutPage() {
 
                   <div className="province-list">
 
-                    {filteredProvinces.length === 0 ? (
+                    {filteredProvinces.length ===
+                    0 ? (
                       <div className="province-empty">
                         No province found
                       </div>
@@ -489,7 +643,9 @@ export default function CheckoutPage() {
                         (province) => (
                           <button
                             type="button"
-                            key={province.name}
+                            key={
+                              province.name
+                            }
                             className={`province-option ${
                               formData.province ===
                               province.name
@@ -502,13 +658,20 @@ export default function CheckoutPage() {
                               )
                             }
                           >
+
                             <span>
-                              {province.name}
+                              {
+                                province.name
+                              }
                             </span>
 
                             <small>
-                              ${province.fee.toFixed(2)}
+                              $
+                              {province.fee.toFixed(
+                                2
+                              )}
                             </small>
+
                           </button>
                         )
                       )
@@ -518,27 +681,39 @@ export default function CheckoutPage() {
 
                 </div>
               )}
+
             </div>
 
-            {/* ADDRESS */}
+            {/* =========================
+                ADDRESS
+            ========================= */}
 
             <div className="checkout-field">
+
               <label>
-                Delivery Address <span>*</span>
+                Delivery Address{" "}
+                <span>*</span>
               </label>
 
               <textarea
                 name="address"
                 placeholder="Enter your delivery address"
-                value={formData.address}
-                onChange={handleChange}
+                value={
+                  formData.address
+                }
+                onChange={
+                  handleChange
+                }
                 rows="3"
                 className="checkout-textbox"
                 required
               />
+
             </div>
 
-            {/* PAYMENT */}
+            {/* =========================
+                PAYMENT METHOD
+            ========================= */}
 
             <div className="checkout-payment-method">
 
@@ -555,6 +730,7 @@ export default function CheckoutPage() {
                   </span>
 
                   <div>
+
                     <strong>
                       QR Payment
                     </strong>
@@ -562,6 +738,7 @@ export default function CheckoutPage() {
                     <small>
                       ABA / KHQR
                     </small>
+
                   </div>
 
                 </div>
@@ -570,7 +747,9 @@ export default function CheckoutPage() {
 
             </div>
 
-            {/* BANK / QR PAYMENT */}
+            {/* =========================
+                BANK / QR PAYMENT
+            ========================= */}
 
             <div className="bank-payment-box">
 
@@ -579,14 +758,16 @@ export default function CheckoutPage() {
               </h3>
 
               <p>
-                Scan the QR code below to pay
-                for your order.
+                Scan the QR code below
+                to pay for your order.
               </p>
 
               <div className="bank-info">
 
                 <p>
-                  <strong>Bank:</strong>{" "}
+                  <strong>
+                    Bank:
+                  </strong>{" "}
                   ABA / KHQR
                 </p>
 
@@ -608,12 +789,17 @@ export default function CheckoutPage() {
                   <strong>
                     Amount:
                   </strong>{" "}
-                  ${checkoutTotal.toFixed(2)}
+                  $
+                  {checkoutTotal.toFixed(
+                    2
+                  )}
                 </p>
 
               </div>
 
-              {/* QR */}
+              {/* =========================
+                  QR
+              ========================= */}
 
               <div className="qr-payment-box">
 
@@ -640,24 +826,30 @@ export default function CheckoutPage() {
                 </div>
 
                 <p className="qr-note">
-                  Screenshot or download this
-                  QR, pay with ABA/KHQR, then
-                  upload your payment screenshot
+                  Screenshot or download
+                  this QR, pay with
+                  ABA/KHQR, then upload
+                  your payment screenshot
                   below.
                 </p>
 
               </div>
 
-              {/* REFERENCE */}
+              {/* =========================
+                  TRANSACTION REFERENCE
+              ========================= */}
 
               <div className="checkout-field">
 
                 <label>
+
                   Transaction Reference
 
                   <small>
+                    {" "}
                     (Optional)
                   </small>
+
                 </label>
 
                 <input
@@ -667,12 +859,16 @@ export default function CheckoutPage() {
                   value={
                     formData.paymentReference
                   }
-                  onChange={handleChange}
+                  onChange={
+                    handleChange
+                  }
                 />
 
               </div>
 
-              {/* PAYMENT PROOF */}
+              {/* =========================
+                  PAYMENT PROOF
+              ========================= */}
 
               <label className="payment-proof-label">
 
@@ -684,7 +880,9 @@ export default function CheckoutPage() {
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg,image/webp"
-                  onChange={handleProofChange}
+                  onChange={
+                    handleProofChange
+                  }
                   required
                 />
 
@@ -699,7 +897,9 @@ export default function CheckoutPage() {
 
             </div>
 
-            {/* DESKTOP / TABLET PLACE ORDER */}
+            {/* =========================
+                DESKTOP / TABLET
+            ========================= */}
 
             <button
               type="submit"
@@ -716,7 +916,9 @@ export default function CheckoutPage() {
           {message && (
             <p
               className={`checkout-message ${
-                message.includes("successfully")
+                message.includes(
+                  "successfully"
+                )
                   ? "success"
                   : "error"
               }`}
@@ -738,11 +940,15 @@ export default function CheckoutPage() {
           </h2>
 
           {cartItems.length === 0 ? (
+
             <p className="empty-checkout">
               Your cart is empty.
             </p>
+
           ) : (
+
             cartItems.map((item) => (
+
               <div
                 key={
                   item.cartId ||
@@ -759,13 +965,18 @@ export default function CheckoutPage() {
 
                   {item.size && (
                     <small className="checkout-item-size">
-                      Size: {item.size}
+                      Size:{" "}
+                      {item.size}
                     </small>
                   )}
 
                   <small className="checkout-item-price">
-                    Qty: {item.quantity} × $
-                    {Number(item.price).toFixed(2)}
+                    Qty:{" "}
+                    {item.quantity}{" "}
+                    × $
+                    {Number(
+                      item.price
+                    ).toFixed(2)}
                   </small>
 
                 </div>
@@ -773,16 +984,24 @@ export default function CheckoutPage() {
                 <strong>
                   $
                   {(
-                    Number(item.price) *
-                    Number(item.quantity)
+                    Number(
+                      item.price
+                    ) *
+                    Number(
+                      item.quantity
+                    )
                   ).toFixed(2)}
                 </strong>
 
               </div>
+
             ))
+
           )}
 
-          {/* PRICE SUMMARY */}
+          {/* =========================
+              PRICE SUMMARY
+          ========================= */}
 
           <div className="checkout-price-summary">
 
@@ -793,7 +1012,10 @@ export default function CheckoutPage() {
               </span>
 
               <strong>
-                ${Number(cartTotal || 0).toFixed(2)}
+                $
+                {Number(
+                  cartTotal || 0
+                ).toFixed(2)}
               </strong>
 
             </div>
@@ -805,9 +1027,13 @@ export default function CheckoutPage() {
               </span>
 
               <strong>
+
                 {formData.province
-                  ? `$${deliveryFee.toFixed(2)}`
+                  ? `$${deliveryFee.toFixed(
+                      2
+                    )}`
                   : "Select province"}
+
               </strong>
 
             </div>
@@ -826,28 +1052,36 @@ export default function CheckoutPage() {
 
               <strong>
                 $
-                {checkoutTotal.toFixed(2)}
+                {checkoutTotal.toFixed(
+                  2
+                )}
               </strong>
 
             </div>
 
           </div>
 
-          {/* PAYMENT NOTE */}
+          {/* =========================
+              PAYMENT NOTE
+          ========================= */}
 
           <div className="checkout-payment-note">
 
             <p>
+
               Payment:{" "}
+
               <strong>
                 QR Payment
               </strong>
+
             </p>
 
             <small>
-              Your payment will be reviewed
-              by admin after you upload your
-              payment proof.
+              Your payment will be
+              reviewed by admin after
+              you upload your payment
+              proof.
             </small>
 
           </div>
@@ -870,6 +1104,7 @@ export default function CheckoutPage() {
         </button>
 
       </div>
+
     </section>
   );
 }
