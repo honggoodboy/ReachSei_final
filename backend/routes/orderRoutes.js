@@ -43,9 +43,11 @@ const upload = multer({
    PROVINCE DELIVERY FEE
 ========================= */
 
-const PHNOM_PENH = "រាជធានីភ្នំពេញ";
+const getDeliveryFee = (province, deliveryMethod) => {
+  if (deliveryMethod === "pickup") {
+    return 0;
+  }
 
-const getDeliveryFee = (province) => {
   const cleanProvince = String(province || "").trim();
 
   if (cleanProvince === PHNOM_PENH) {
