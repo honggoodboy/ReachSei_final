@@ -895,13 +895,13 @@ export default function CheckoutPage() {
 
                 <div className="qr-actions">
 
-                  <a
-                    href={qrImage}
-                    download
-                    className="download-qr-btn"
-                  >
-                    Download QR
-                  </a>
+                  <button
+  type="button"
+  className="download-qr-btn"
+  onClick={downloadQR}
+>
+  Download QR
+</button>
 
                 </div>
 
