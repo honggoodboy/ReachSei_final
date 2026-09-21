@@ -77,6 +77,8 @@ export default function CheckoutPage() {
   const checkoutTotal =
     Number(cartTotal || 0) + deliveryFee;
 
+  
+
   /*
     =========================
     CLOSE PROVINCE DROPDOWN
@@ -137,6 +139,70 @@ export default function CheckoutPage() {
     setProvinceOpen(false);
     setMessage("");
   };
+  const downloadQR = async () => {
+  try {
+    const response = await fetch(qrImage);
+
+    if (!response.ok) {
+      throw new Error("Failed to load QR image");
+    }
+
+    const blob = await response.blob();
+
+    const file = new File(
+      [blob],
+      "Reachsei_KHQR.png",
+      {
+        type: blob.type || "image/png",
+      }
+    );
+
+    // 📱 Phone: open native share/save menu
+    if (
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({
+        files: [file],
+      })
+    ) {
+      try {
+        await navigator.share({
+          title: "Reachsei KHQR",
+          text: "Reachsei payment QR",
+          files: [file],
+        });
+
+        return;
+      } catch (error) {
+        if (error.name === "AbortError") {
+          return;
+        }
+      }
+    }
+
+    // 💻 Desktop fallback
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "Reachsei_KHQR.png";
+
+    document.body.appendChild(link);
+
+    link.click();
+
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error(
+      "QR download error:",
+      error
+    );
+  }
+};
 
   /*
     =========================
