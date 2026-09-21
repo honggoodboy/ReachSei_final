@@ -107,49 +107,74 @@ export default function ReceiptPage() {
   ========================= */
 
   const downloadReceipt = async () => {
-    const receipt =
-      document.getElementById(
-        "reachsei-receipt"
+  const receipt = document.getElementById("reachsei-receipt");
+
+  if (!receipt) {
+    console.error("Receipt element not found.");
+    return;
+  }
+
+  try {
+    const canvas = await html2canvas(receipt, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+    });
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        console.error("Could not create receipt image.");
+        return;
+      }
+
+      const file = new File(
+        [blob],
+        `Reachsei_Receipt_${orderCode}.png`,
+        {
+          type: "image/png",
+        }
       );
 
-    if (!receipt) {
-      console.error(
-        "Receipt element not found."
-      );
-      return;
-    }
+      // 📱 Mobile: open the native share/save menu
+      if (
+        navigator.share &&
+        navigator.canShare &&
+        navigator.canShare({ files: [file] })
+      ) {
+        try {
+          await navigator.share({
+            title: "Reachsei Receipt",
+            text: `Receipt ${orderCode}`,
+            files: [file],
+          });
 
-    try {
-      const canvas =
-        await html2canvas(receipt, {
-          scale: 2,
-          backgroundColor: "#ffffff",
-          useCORS: true,
-        });
+          return;
+        } catch (error) {
+          // User cancelled the share menu
+          if (error.name === "AbortError") {
+            return;
+          }
+        }
+      }
 
-      const image =
-        canvas.toDataURL("image/png");
+      // 💻 Desktop fallback: download PNG
+      const url = URL.createObjectURL(blob);
 
-      const link =
-        document.createElement("a");
-
-      link.download =
-        `Reachsei_Receipt_${orderCode}.png`;
-
-      link.href = image;
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Reachsei_Receipt_${orderCode}.png`;
 
       document.body.appendChild(link);
-
       link.click();
-
       document.body.removeChild(link);
-    } catch (error) {
-      console.error(
-        "Failed to download receipt:",
-        error
-      );
-    }
-  };
+
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  } catch (error) {
+    console.error("Failed to create receipt:", error);
+  }
+};
 
   return (
     <section className="receipt-page">
