@@ -338,13 +338,14 @@
 /* IMPORTANT: both buttons same size */
 .my-order-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-top: 20px;
 }
 
 .cancel-order-btn,
-.contact-support-btn {
+.contact-support-btn,
+.download-receipt-btn {
   width: 100%;
   min-height: 56px;
   border: none;
@@ -380,6 +381,15 @@
 .contact-support-btn:hover {
   background: #0284c7;
   color: white;
+}
+
+.download-receipt-btn {
+  background: #111827;
+  color: white;
+}
+
+.download-receipt-btn:hover {
+  background: #374151;
 }
 .my-order-db-id {
   color: var(--smoke);
@@ -430,12 +440,13 @@
   }
 
   .my-order-actions {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 10px;
   }
 
   .cancel-order-btn,
-  .contact-support-btn {
+  .contact-support-btn,
+  .download-receipt-btn {
     min-height: 54px;
     font-size: 15px;
     border-radius: 15px;

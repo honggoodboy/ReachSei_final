@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>PayWay QR Test</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+    }
+
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 5px 30px rgba(0,0,0,0.1);
+    }
+
+    #qr {
+      width: 300px;
+      height: 300px;
+      object-fit: contain;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="box">
+    <h2>PayWay QR Test</h2>
+
+    <p id="status">Generating QR...</p>
+
+    <img id="qr" />
+
+    <p>
+      Order: <strong id="orderId"></strong>
+    </p>
+
+    <p>
+      Amount: <strong id="amount"></strong>
+    </p>
+  </div>
+
+  <script>
+    async function generateQR() {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/payway/generate-qr",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              orderId: "LOCALTEST001",
+              amount: 0.01,
+              currency: "USD",
+              customerName: "Soeung Menghong",
+              email: "test@example.com",
+              phone: "012345678",
+              items: [
+                {
+                  name: "Reachsei Test Product",
+                  quantity: 1,
+                  price: 0.01
+                }
+              ]
+            })
+          }
+        );
+
+        const data = await response.json();
+
+        console.log(data);
+
+        if (!data.success) {
+          document.getElementById("status").textContent =
+            "QR generation failed";
+          return;
+        }
+
+        document.getElementById("status").textContent =
+          "QR generated successfully";
+
+        document.getElementById("qr").src = data.qrImage;
+
+        document.getElementById("orderId").textContent =
+          data.orderId;
+
+        document.getElementById("amount").textContent =
+          `${data.amount} ${data.currency}`;
+
+      } catch (error) {
+        console.error(error);
+
+        document.getElementById("status").textContent =
+          "Connection error";
+      }
+    }
+
+    generateQR();
+  </script>
+
+</body>
+</html>

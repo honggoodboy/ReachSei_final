@@ -257,6 +257,18 @@ export default function MyOrders() {
                   </div>
 
                   <div className="my-order-actions">
+                    <button
+                      type="button"
+                      className="download-receipt-btn"
+                      onClick={() =>
+                        navigate("/receipt", {
+                          state: { order },
+                        })
+                      }
+                    >
+                      Download Receipt
+                    </button>
+
                     {order.status === "pending" && (
                       <button
                         type="button"

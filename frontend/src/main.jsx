@@ -30,6 +30,7 @@ import EditProfile from "./pages/EditProfile";
 import ChangePassword from "./pages/ChangePassword";
 import NewsletterPage from "./pages/NewsletterPage";
 import ContactPage from "./pages/ContactPage";
+import ReceiptPage from "./pages/ReceiptPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ShopLayout from "./components/ShopLayout";
@@ -117,6 +118,14 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                 }
               />
               <Route path="/admin/login" element={<AdminLogin />} />
+              <Route
+                path="/receipt"
+                element={
+                  <ShopLayout>
+                    <ReceiptPage />
+                  </ShopLayout>
+                }
+              />
               <Route
                 path="/my-orders"
                 element={
