@@ -14,6 +14,7 @@ import userAuthRoutes from "./routes/userAuthRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 import paywayRoutes from "./routes/payway.routes.js";
+import barayRoutes from "./routes/baray.routes.js";
 
 const app = express();
 
@@ -47,7 +48,10 @@ app.use(
   "/api/payway",
   paywayRoutes
 );
-
+app.use(
+  "/api/baray",
+  barayRoutes
+);
 /* =========================
    MAIN ROUTES
 ========================= */
