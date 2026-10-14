@@ -6,12 +6,26 @@ import pool from "../db.js";
 
 const router = express.Router();
 
+const BARAY_API_URL = "https://api.baray.io/pay";
+const BARAY_CHECKOUT_URL = "https://pay.baray.io";
+
+// These names match the environment variables in your Render screenshot.
+// Confirm with Baray that CIPHER_KEY is the AES key and SECRET_KEY is the IV.
 function getBarayKey() {
-  const key = Buffer.from(process.env.BARAY_SK || "", "base64");
-  const iv = Buffer.from(process.env.BARAY_IV || "", "base64");
+  const key = Buffer.from(
+    process.env.BARAY_CIPHER_KEY || "",
+    "base64"
+  );
+
+  const iv = Buffer.from(
+    process.env.BARAY_SECRET_KEY || "",
+    "base64"
+  );
 
   if (key.length !== 32 || iv.length !== 16) {
-    throw new Error("Invalid Baray SK or IV configuration");
+    throw new Error(
+      "Invalid Baray encryption key or IV configuration"
+    );
   }
 
   return { key, iv };
@@ -21,16 +35,37 @@ function encryptPayload(payload) {
   const { key, iv } = getBarayKey();
   const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
 
-  return Buffer.concat([
+  const encrypted = Buffer.concat([
     cipher.update(JSON.stringify(payload), "utf8"),
     cipher.final(),
-  ]).toString("base64");
+  ]);
+
+  return encrypted.toString("base64");
 }
 
 function decryptOrderId(encryptedOrderId) {
+  if (
+    typeof encryptedOrderId !== "string" ||
+    encryptedOrderId.length === 0
+  ) {
+    throw new Error("Missing encrypted order ID");
+  }
+
   const { key, iv } = getBarayKey();
   const encrypted = Buffer.from(encryptedOrderId, "base64");
-  const decipher = crypto.createDecipheriv("aes-256-cbc", key, iv);
+
+  if (
+    encrypted.length === 0 ||
+    encrypted.length % 16 !== 0
+  ) {
+    throw new Error("Invalid encrypted order ID");
+  }
+
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    key,
+    iv
+  );
 
   return Buffer.concat([
     decipher.update(encrypted),
@@ -38,25 +73,41 @@ function decryptOrderId(encryptedOrderId) {
   ]).toString("utf8");
 }
 
-/*
+/**
  * POST /api/baray/create-intent
- * Creates a Baray payment intent for an existing Reachsei order.
+ *
+ * Creates a Baray hosted checkout intent for an existing order.
+ *
+ * IMPORTANT:
+ * The order must be authorized for the current customer before
+ * using this endpoint in a public production checkout.
  */
 router.post("/create-intent", async (req, res) => {
   try {
-    const orderId = Number(req.body.orderId);
+    const orderId = Number(req.body?.orderId);
 
     if (!Number.isSafeInteger(orderId) || orderId <= 0) {
-      return res.status(400).json({ error: "Invalid order ID" });
+      return res.status(400).json({
+        error: "Invalid order ID",
+      });
     }
 
+    const apiKey = process.env.BARAY_API_KEY;
+    const frontendUrl = process.env.FRONTEND_URL;
+
     if (
-      !process.env.BARAY_API_KEY ||
-      !process.env.BARAY_SK ||
-      !process.env.BARAY_IV
+      !apiKey ||
+      !process.env.BARAY_CIPHER_KEY ||
+      !process.env.BARAY_SECRET_KEY
     ) {
       return res.status(500).json({
         error: "Baray credentials are not configured",
+      });
+    }
+
+    if (!frontendUrl) {
+      return res.status(500).json({
+        error: "FRONTEND_URL is not configured",
       });
     }
 
@@ -69,7 +120,9 @@ router.post("/create-intent", async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Order not found" });
+      return res.status(404).json({
+        error: "Order not found",
+      });
     }
 
     const order = result.rows[0];
@@ -80,11 +133,13 @@ router.post("/create-intent", async (req, res) => {
       });
     }
 
-    // Reuse the existing intent instead of creating duplicates.
+    // Reuse an existing intent to avoid creating duplicates.
     if (order.baray_intent_id) {
       return res.json({
         intentId: order.baray_intent_id,
-        paymentUrl: `https://pay.baray.io/${order.baray_intent_id}`,
+        paymentUrl: `${BARAY_CHECKOUT_URL}/${encodeURIComponent(
+          order.baray_intent_id
+        )}`,
       });
     }
 
@@ -96,9 +151,7 @@ router.post("/create-intent", async (req, res) => {
       });
     }
 
-    const frontendUrl = (
-      process.env.FRONTEND_URL || "http://localhost:5173"
-    ).replace(/\/$/, "");
+    const normalizedFrontendUrl = frontendUrl.replace(/\/+$/, "");
 
     const payload = {
       amount: amount.toFixed(2),
@@ -108,16 +161,18 @@ router.post("/create-intent", async (req, res) => {
         source: "Reachsei",
       },
       custom_success_url:
-        `${frontendUrl}/payment/success?orderId=${order.id}`,
+        `${normalizedFrontendUrl}/payment/success?orderId=${order.id}`,
     };
 
     const response = await axios.post(
-      "https://api.baray.io/pay",
-      { data: encryptPayload(payload) },
+      BARAY_API_URL,
+      {
+        data: encryptPayload(payload),
+      },
       {
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.BARAY_API_KEY,
+          "x-api-key": apiKey,
         },
         timeout: 20000,
       }
@@ -125,8 +180,12 @@ router.post("/create-intent", async (req, res) => {
 
     const intentId = response.data?._id;
 
-    if (!intentId) {
-      console.error("Baray returned no intent ID");
+    if (
+      typeof intentId !== "string" ||
+      intentId.length === 0
+    ) {
+      console.error("Baray response did not contain a valid intent ID");
+
       return res.status(502).json({
         error: "Baray did not return a payment intent",
       });
@@ -137,19 +196,22 @@ router.post("/create-intent", async (req, res) => {
        SET baray_intent_id = $1
        WHERE id = $2
          AND payment_status <> 'paid'
+         AND baray_intent_id IS NULL
        RETURNING id`,
       [intentId, order.id]
     );
 
     if (saved.rows.length === 0) {
+      // Another request may have changed the order while
+      // the Baray request was in progress.
       return res.status(409).json({
-        error: "Order status changed; check payment status before retrying",
+        error: "Order changed during checkout. Check its payment status.",
       });
     }
 
     return res.json({
       intentId,
-      paymentUrl: `https://pay.baray.io/${intentId}`,
+      paymentUrl: `${BARAY_CHECKOUT_URL}/${encodeURIComponent(intentId)}`,
     });
   } catch (error) {
     console.error(
@@ -163,67 +225,23 @@ router.post("/create-intent", async (req, res) => {
   }
 });
 
-/*
+/**
  * POST /api/baray/webhook
- * Baray sends encrypted_order_id and bank after payment.
+ *
+ * TEMPORARILY DISABLED FOR PAYMENT CONFIRMATION.
+ *
+ * Decrypting an order ID alone does not prove that payment
+ * succeeded. Implement Baray transaction verification before
+ * this endpoint is allowed to update payment_status.
  */
-router.post("/webhook", async (req, res) => {
-  try {
-    const { encrypted_order_id, bank } = req.body || {};
+router.post("/webhook", async (_req, res) => {
+  console.warn(
+    "Baray webhook received, but payment confirmation is disabled pending verification."
+  );
 
-    if (
-      typeof encrypted_order_id !== "string" ||
-      typeof bank !== "string"
-    ) {
-      return res.status(400).send("Invalid webhook payload");
-    }
-
-    const orderIdText = decryptOrderId(encrypted_order_id);
-
-    if (!/^[1-9]\d*$/.test(orderIdText)) {
-      return res.status(400).send("Invalid order reference");
-    }
-
-    const orderId = Number(orderIdText);
-
-    if (!Number.isSafeInteger(orderId)) {
-      return res.status(400).send("Invalid order reference");
-    }
-
-    const result = await pool.query(
-      `UPDATE public.orders
-       SET payment_status = 'paid',
-           payment_reference = $1
-       WHERE id = $2
-         AND baray_intent_id IS NOT NULL
-         AND payment_status <> 'paid'
-       RETURNING id`,
-      [`BARAY:${bank}`, orderId]
-    );
-
-    if (result.rows.length === 0) {
-      // Duplicate notifications can happen. Acknowledge an already-paid
-      // order, but do not accept an unknown order.
-      const existing = await pool.query(
-        `SELECT payment_status, baray_intent_id
-         FROM public.orders
-         WHERE id = $1`,
-        [orderId]
-      );
-
-      if (
-        existing.rows.length === 0 ||
-        !existing.rows[0].baray_intent_id
-      ) {
-        return res.status(404).send("Order not found");
-      }
-    }
-
-    return res.status(200).send("OK");
-  } catch (error) {
-    console.error("BARAY WEBHOOK ERROR:", error.message);
-    return res.status(400).send("Invalid webhook");
-  }
+  return res.status(503).json({
+    error: "Payment verification is not configured yet",
+  });
 });
 
 export default router;
