@@ -52,14 +52,16 @@ export default function Login() {
     container.innerHTML = "";
 
     const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?24";
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
     script.async = true;
     script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
-    script.setAttribute("data-size", "medium");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "10");
     script.setAttribute(
       "data-auth-url",
-      "https://reachsei.vercel.app/auth/telegram/callback"
+      `${window.location.origin}/auth/telegram/callback`
     );
+    script.setAttribute("data-request-access", "write");
 
     container.appendChild(script);
 
