@@ -453,6 +453,9 @@ router.post(
         }
       );
 
+      console.log("PAYWAY QR STRING:", data?.qrString);
+      console.log("PAYWAY DEEPLINK:", data?.abapay_deeplink);
+
 
       /* =====================================================
          CHECK PAYWAY RESPONSE
@@ -947,8 +950,6 @@ router.post("/confirm-paid", async (req, res) => {
   }
 });
 
-console.log("PAYWAY QR STRING:", data.qrString);
-console.log("PAYWAY DEEPLINK:", data.abapay_deeplink);
 /* =========================================================
    EXPORT
 ========================================================= */

@@ -140,7 +140,7 @@ app.get(
 const PORT =
   process.env.PORT || 5000;
 
-app.listen(
+const server = app.listen(
   PORT,
   () => {
     console.log(
@@ -160,3 +160,12 @@ app.listen(
     );
   }
 );
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`ERROR: Port ${PORT} is already in use by another process!`);
+  } else {
+    console.error("SERVER ERROR:", err);
+  }
+  process.exit(1);
+});
