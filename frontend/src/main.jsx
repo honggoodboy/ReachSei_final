@@ -57,7 +57,6 @@ function ScrollToTop() {
 }
 
 function AuthHashHandler() {
-  const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
@@ -66,9 +65,9 @@ function AuthHashHandler() {
       window.location.hash.includes("access_token=") &&
       location.pathname !== "/auth/callback"
     ) {
-      navigate(`/auth/callback${window.location.hash}`, { replace: true });
+      window.location.replace(`/auth/callback${window.location.hash}`);
     }
-  }, [location, navigate]);
+  }, [location]);
 
   return null;
 }
