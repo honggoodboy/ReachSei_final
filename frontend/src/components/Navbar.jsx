@@ -285,7 +285,7 @@ export default function Navbar() {
                         : "?"}
                     </span>
                     <span className="profile-name">
-                      {user?.name || "Profile"}
+                      {user?.name || "Sign In"}
                     </span>
                   </Link>
 
@@ -422,7 +422,7 @@ export default function Navbar() {
               <span className="drawer-account-copy">
                 <strong>{user?.name || "My Account"}</strong>
                 <small>
-                  {user ? "View your profile" : "Login / Register"}
+                  {user ? "View your profile" : "Sign In with Google / Telegram"}
                 </small>
               </span>
 
@@ -497,7 +497,7 @@ export default function Navbar() {
                   className="drawer-login-button"
                   onClick={() => setMenuOpen(false)}
                 >
-                  Login / Register
+                  Sign In
                 </Link>
               )}
             </div>

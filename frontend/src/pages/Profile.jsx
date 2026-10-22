@@ -28,7 +28,6 @@ export default function Profile() {
 
         <div className="profile-links">
           <Link to="/profile/edit">Edit Profile</Link>
-          <Link to="/profile/password">Change Password</Link>
           <Link to="/my-orders">My Orders</Link>
           <Link to="/wishlist">Wishlist</Link>
         </div>

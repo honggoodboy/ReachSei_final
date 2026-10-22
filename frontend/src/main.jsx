@@ -5,6 +5,7 @@ import {
   BrowserRouter,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
 
@@ -131,11 +132,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
               <Route
                 path="/register"
-                element={
-                  <ShopLayout>
-                    <Register />
-                  </ShopLayout>
-                }
+                element={<Navigate to="/login" replace />}
               />
 
               {/* Google OAuth callback */}
@@ -144,26 +141,18 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                 element={<AuthCallback />}
               />
               <Route
-  path="/auth/telegram/callback"
-  element={<TelegramCallback />}
-/>
+                path="/auth/telegram/callback"
+                element={<TelegramCallback />}
+              />
 
               <Route
                 path="/forgot-password"
-                element={
-                  <ShopLayout>
-                    <ForgotPassword />
-                  </ShopLayout>
-                }
+                element={<Navigate to="/login" replace />}
               />
 
               <Route
                 path="/reset-password/:token"
-                element={
-                  <ShopLayout>
-                    <ResetPassword />
-                  </ShopLayout>
-                }
+                element={<Navigate to="/login" replace />}
               />
 
               {/* Orders and receipts */}

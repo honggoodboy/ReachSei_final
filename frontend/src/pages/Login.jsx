@@ -1,26 +1,29 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { supabase } from "../lib/supabase.js";
+import logo from "../img/logo_reachsei.png";
 import "./Auth.css";
 
 export default function Login() {
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
-
-  const [formData, setFormData] = useState({
-    identifier: "",
-    password: "",
-  });
-
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Load Telegram's official Login Widget.
   useEffect(() => {
-    const container = document.getElementById("telegram-login-widget");
+    const savedUser = localStorage.getItem("user");
+
+    if (savedUser) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate]);
+
+  // Official Telegram Login Widget
+  useEffect(() => {
+    const container = document.getElementById(
+      "telegram-login-widget"
+    );
+
     if (!container) return;
 
     container.innerHTML = "";
@@ -29,7 +32,8 @@ export default function Login() {
     script.src = "https://telegram.org/js/telegram-widget.js?22";
     script.async = true;
     script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
-    script.setAttribute("data-size", "medium");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "10");
     script.setAttribute(
       "data-auth-url",
       `${window.location.origin}/auth/telegram/callback`
@@ -43,44 +47,7 @@ export default function Login() {
     };
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Existing email/password login
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    try {
-      setLoading(true);
-      setMessage("");
-
-      const res = await axios.post(`${API_BASE_URL}/users/login`, {
-        identifier: formData.identifier.trim(),
-        password: formData.password,
-      });
-
-      localStorage.setItem("userToken", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
-      navigate("/");
-    } catch (error) {
-      console.error("Login error:", error);
-      setMessage(
-        error.response?.data?.error ||
-          "Invalid email/phone or password."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Existing Google login through Supabase
+  // Google OAuth via Supabase
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
@@ -106,88 +73,76 @@ export default function Login() {
 
   return (
     <section className="auth-page">
-      <div className="auth-card">
-        <h1>Login</h1>
+      <div className="auth-card-wrapper">
+        <Link to="/" className="auth-back-link">
+          <span className="auth-back-arrow">←</span>
+          <span>Return to Store</span>
+        </Link>
 
-        <p className="auth-subtitle">
-          Login with your email or phone number.
-        </p>
+        <div className="auth-card">
+          <div className="auth-header">
+            <img
+              src={logo}
+              alt="ReachSei Badminton Store"
+              className="auth-logo-img"
+            />
 
-        <form onSubmit={handleLogin} className="auth-form">
-          <input
-            name="identifier"
-            type="text"
-            placeholder="Email or phone number"
-            value={formData.identifier}
-            onChange={handleChange}
-            required
-          />
+            <h1 className="auth-title">Welcome to ReachSei</h1>
 
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-
-          <div className="forgot-password-row">
-            <Link
-              to="/forgot-password"
-              className="forgot-password-link"
-            >
-              Forgot password?
-            </Link>
+            <p className="auth-subtitle">
+              Sign in to your account to continue shopping.
+            </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading || googleLoading}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+          {message && (
+            <div className="auth-alert-error" role="alert">
+              <span className="auth-alert-icon">!</span>
+              <span>{message}</span>
+            </div>
+          )}
 
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
+          <div className="auth-actions">
+            {/* Google Login */}
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="google-sign-in-btn"
+            >
+              <span className="social-btn-inner">
+                <img
+                  src="https://img.icons8.com/?size=100&id=17949&format=png&color=000000"
+                  alt=""
+                  className="social-login-icon"
+                />
+                <span>
+                  {googleLoading
+                    ? "Connecting to Google..."
+                    : "Continue with Google"}
+                </span>
+              </span>
+            </button>
 
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          disabled={googleLoading || loading}
-          className="google-login-button"
-        >
-          {googleLoading
-            ? "Connecting to Google..."
-            : "Continue with Google"}
-        </button>
+            <div className="auth-divider-line">
+              <span>or</span>
+            </div>
 
-        <div className="auth-divider">
-          <span>OR</span>
-        </div>
+            {/* Telegram Login */}
+            <div className="telegram-sign-in-box">
+              <div
+                id="telegram-login-widget"
+                className="telegram-widget-wrapper"
+              />
+            </div>
+          </div>
 
-        <div
-          id="telegram-login-widget"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            margin: "16px 0",
-            minHeight: "40px",
-          }}
-        />
-
-        {message && (
-          <p className="auth-message" role="alert">
-            {message}
+          <p className="auth-footer-terms">
+            By signing in, you agree to ReachSei&apos;s{" "}
+            <Link to="/contact">Terms of Service</Link>
+            {" "}and{" "}
+            <Link to="/contact">Privacy Policy</Link>.
           </p>
-        )}
-
-        <p className="auth-switch">
-          Don&apos;t have an account?{" "}
-          <Link to="/register">Register</Link>
-        </p>
+        </div>
       </div>
     </section>
   );
