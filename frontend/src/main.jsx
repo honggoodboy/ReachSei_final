@@ -42,7 +42,6 @@ import ReceiptPage from "./pages/ReceiptPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import TelegramCallback from "./pages/TelegramCallback.jsx";
-
 import "./index.css";
 
 function ScrollToTop() {
