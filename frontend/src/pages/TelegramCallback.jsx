@@ -40,6 +40,7 @@ export default function TelegramCallback() {
 
         localStorage.setItem("userToken", token);
         localStorage.setItem("user", JSON.stringify(user));
+        window.dispatchEvent(new Event("userUpdated"));
 
         if (active) {
           setMessage("Login successful! Redirecting...");

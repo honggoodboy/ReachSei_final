@@ -38,6 +38,7 @@ export default function EditProfile() {
       );
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      window.dispatchEvent(new Event("userUpdated"));
 
       setMessage("Profile updated successfully.");
 
@@ -54,7 +55,20 @@ export default function EditProfile() {
     <section className="edit-profile-page">
       <div className="edit-profile-card">
         <div className="edit-profile-head">
-          <h1>Edit Profile</h1>
+          <div>
+            <h1>Edit Profile</h1>
+            <p className="edit-profile-sub">Update your account information</p>
+          </div>
+          {savedUser.avatar_url && (
+            <div className="edit-profile-avatar-wrap">
+              <img
+                src={savedUser.avatar_url}
+                alt={savedUser.name || "User"}
+                className="edit-profile-avatar-img"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleUpdate} className="edit-profile-form">

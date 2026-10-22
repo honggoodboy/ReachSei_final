@@ -280,9 +280,25 @@ export default function Navbar() {
                     className="profile-trigger"
                   >
                     <span className="profile-avatar-small">
-                      {user?.name
-                        ? user.name.charAt(0).toUpperCase()
-                        : "?"}
+                      {user?.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.name || "User"}
+                          className="profile-avatar-img"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            if (e.currentTarget.parentElement) {
+                              e.currentTarget.parentElement.textContent =
+                                user.name?.charAt(0).toUpperCase() || "?";
+                            }
+                          }}
+                        />
+                      ) : user?.name ? (
+                        user.name.charAt(0).toUpperCase()
+                      ) : (
+                        "?"
+                      )}
                     </span>
                     <span className="profile-name">
                       {user?.name || "Sign In"}
@@ -414,9 +430,25 @@ export default function Navbar() {
               onClick={() => setMenuOpen(false)}
             >
               <span className="drawer-avatar">
-                {user?.name
-                  ? user.name.charAt(0).toUpperCase()
-                  : "?"}
+                {user?.avatar_url ? (
+                  <img
+                    src={user.avatar_url}
+                    alt={user.name || "User"}
+                    className="profile-avatar-img"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      if (e.currentTarget.parentElement) {
+                        e.currentTarget.parentElement.textContent =
+                          user.name?.charAt(0).toUpperCase() || "?";
+                      }
+                    }}
+                  />
+                ) : user?.name ? (
+                  user.name.charAt(0).toUpperCase()
+                ) : (
+                  "?"
+                )}
               </span>
 
               <span className="drawer-account-copy">

@@ -47,7 +47,7 @@ router.post("/register", async (req, res) => {
       `
       INSERT INTO users (name, email, phone, password)
       VALUES ($1, $2, $3, $4)
-      RETURNING id, name, email, phone
+      RETURNING id, name, email, phone, avatar_url
       `,
       [cleanName, cleanEmail, cleanPhone, hashedPassword]
     );
@@ -127,6 +127,7 @@ router.post("/login", async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        avatar_url: user.avatar_url || null,
       },
     });
   } catch (error) {
@@ -310,6 +311,10 @@ router.post("/google-login", async (req, res) => {
       googleUser.user_metadata?.full_name ||
       googleUser.user_metadata?.name ||
       email?.split("@")[0];
+    const avatarUrl =
+      googleUser.user_metadata?.avatar_url ||
+      googleUser.user_metadata?.picture ||
+      null;
 
     if (!email || !name) {
       return res.status(400).json({
@@ -320,7 +325,7 @@ router.post("/google-login", async (req, res) => {
     // Find an existing ReachSei account by email.
     const existingResult = await pool.query(
       `
-      SELECT id, name, email, phone
+      SELECT id, name, email, phone, avatar_url
       FROM users
       WHERE LOWER(email) = $1
       `,
@@ -332,15 +337,29 @@ router.post("/google-login", async (req, res) => {
     if (existingResult.rows.length > 0) {
       // Keep the existing ReachSei account and its database ID.
       user = existingResult.rows[0];
+
+      // Update avatar if provided by Google
+      if (avatarUrl && (!user.avatar_url || user.avatar_url !== avatarUrl)) {
+        const updateResult = await pool.query(
+          `
+          UPDATE users
+          SET avatar_url = $1
+          WHERE id = $2
+          RETURNING id, name, email, phone, avatar_url
+          `,
+          [avatarUrl, user.id]
+        );
+        user = updateResult.rows[0];
+      }
     } else {
       // Google users can initially have no phone or password.
       const createdResult = await pool.query(
         `
-        INSERT INTO users (name, email)
-        VALUES ($1, $2)
-        RETURNING id, name, email, phone
+        INSERT INTO users (name, email, avatar_url)
+        VALUES ($1, $2, $3)
+        RETURNING id, name, email, phone, avatar_url
         `,
-        [name, email]
+        [name, email, avatarUrl]
       );
 
       user = createdResult.rows[0];
@@ -368,6 +387,7 @@ router.post("/google-login", async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        avatar_url: user.avatar_url || null,
       },
     });
   } catch (error) {
@@ -444,6 +464,7 @@ router.post("/telegram-login", async (req, res) => {
     const firstName = String(telegramData.first_name || "").trim();
     const lastName = String(telegramData.last_name || "").trim();
     const name = [firstName, lastName].filter(Boolean).join(" ");
+    const photoUrl = telegramData.photo_url ? String(telegramData.photo_url).trim() : null;
 
     if (!name) {
       return res.status(400).json({
@@ -453,7 +474,7 @@ router.post("/telegram-login", async (req, res) => {
 
     // Find an account already linked to this Telegram ID.
     const existingResult = await pool.query(
-      `SELECT id, name, email, phone
+      `SELECT id, name, email, phone, avatar_url
        FROM users
        WHERE telegram_id = $1`,
       [telegramId]
@@ -463,14 +484,26 @@ router.post("/telegram-login", async (req, res) => {
 
     if (existingResult.rows.length > 0) {
       user = existingResult.rows[0];
+
+      // Update avatar if provided by Telegram
+      if (photoUrl && (!user.avatar_url || user.avatar_url !== photoUrl)) {
+        const updateResult = await pool.query(
+          `UPDATE users
+           SET avatar_url = $1
+           WHERE id = $2
+           RETURNING id, name, email, phone, avatar_url`,
+          [photoUrl, user.id]
+        );
+        user = updateResult.rows[0];
+      }
     } else {
       // Telegram may not provide an email address.
       // Do not invent an email or automatically link accounts by name.
       const createdResult = await pool.query(
-        `INSERT INTO users (name, telegram_id)
-         VALUES ($1, $2)
-         RETURNING id, name, email, phone`,
-        [name, telegramId]
+        `INSERT INTO users (name, telegram_id, avatar_url)
+         VALUES ($1, $2, $3)
+         RETURNING id, name, email, phone, avatar_url`,
+        [name, telegramId, photoUrl]
       );
 
       user = createdResult.rows[0];
@@ -495,6 +528,7 @@ router.post("/telegram-login", async (req, res) => {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        avatar_url: user.avatar_url || null,
       },
     });
   } catch (error) {
@@ -541,7 +575,7 @@ router.put("/:id", async (req, res) => {
       UPDATE users
       SET name = $1, email = $2, phone = COALESCE($3, phone)
       WHERE id = $4
-      RETURNING id, name, email, phone
+      RETURNING id, name, email, phone, avatar_url
       `,
       [cleanName, cleanEmail, phone ? phone.trim() : null, id]
     );
@@ -556,6 +590,32 @@ router.put("/:id", async (req, res) => {
     });
   } catch (error) {
     console.error("UPDATE PROFILE ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* =========================
+   GET CUSTOMER PROFILE
+   GET /users/:id
+========================= */
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      "SELECT id, name, email, phone, avatar_url FROM users WHERE id = $1",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error("GET PROFILE ERROR:", error);
     res.status(500).json({ error: error.message });
   }
 });
