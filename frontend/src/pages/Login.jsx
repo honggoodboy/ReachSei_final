@@ -44,22 +44,31 @@ export default function Login() {
     }
   };
 
-  // Telegram login through the backend
-  const handleTelegramLogin = () => {
-    const apiUrl = import.meta.env.VITE_API_URL;
+  // Load official Telegram Login Widget
+  useEffect(() => {
+    const container = document.getElementById("telegram-login-widget");
+    if (!container) return;
 
-    if (!apiUrl) {
-      setMessage("Telegram login is not configured. Please try again later.");
-      return;
-    }
+    container.innerHTML = "";
 
-    setMessage("");
-    setTelegramLoading(true);
-
-    window.location.assign(
-      `${apiUrl.replace(/\/+$/, "")}/auth/telegram/login`
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.async = true;
+    script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-radius", "10");
+    script.setAttribute(
+      "data-auth-url",
+      `${window.location.origin}/auth/telegram/callback`
     );
-  };
+    script.setAttribute("data-request-access", "write");
+
+    container.appendChild(script);
+
+    return () => {
+      container.innerHTML = "";
+    };
+  }, []);
 
   return (
     <section className="auth-page">
@@ -98,7 +107,7 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={googleLoading || telegramLoading}
+              disabled={googleLoading}
               className="social-sign-in-btn"
             >
               <span className="social-btn-inner">
@@ -120,26 +129,12 @@ export default function Login() {
               <span>or</span>
             </div>
 
-            <button
-              type="button"
-              onClick={handleTelegramLogin}
-              disabled={googleLoading || telegramLoading}
-              className="social-sign-in-btn"
-            >
-              <span className="social-btn-inner">
-                <img
-                  src="https://img.icons8.com/?size=100&id=lUktdBVdL4Kb&format=png&color=228BE6"
-                  alt=""
-                  className="social-login-icon"
-                />
-
-                <span>
-                  {telegramLoading
-                    ? "Connecting to Telegram..."
-                    : "Log in as Soeung"}
-                </span>
-              </span>
-            </button>
+            <div className="telegram-sign-in-box">
+              <div
+                id="telegram-login-widget"
+                className="telegram-widget-wrapper"
+              />
+            </div>
           </div>
 
           {/* Terms */}

@@ -217,6 +217,41 @@
   white-space: nowrap;
 }
 
+/* Telegram Container */
+
+.telegram-sign-in-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #dededb;
+  border-radius: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.telegram-sign-in-box:hover {
+  background: #fafaf9;
+  border-color: #bdbdb8;
+}
+
+.telegram-widget-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  overflow: hidden;
+}
+
+.telegram-widget-wrapper iframe {
+  display: block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
 /* Legal Terms */
 
 .auth-footer-terms {
