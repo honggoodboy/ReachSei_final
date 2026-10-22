@@ -399,6 +399,24 @@ router.post("/google-login", async (req, res) => {
   }
 });
 
+/* =========================
+   TELEGRAM LOGIN REDIRECT
+   GET /users/telegram/login
+========================= */
+router.get("/telegram/login", (req, res) => {
+  const botToken = process.env.TELEGRAM_LOGIN_BOT_TOKEN || "";
+  const botId = botToken.split(":")[0] || "8885168265";
+  const frontendUrl =
+    process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+  const returnTo = `${frontendUrl.replace(/\/+$/, "")}/auth/telegram/callback`;
+
+  const redirectUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(
+    frontendUrl
+  )}&embed=0&request_access=write&return_to=${encodeURIComponent(returnTo)}`;
+
+  res.redirect(redirectUrl);
+});
+
 router.post("/telegram-login", async (req, res) => {
   try {
     const { hash, ...telegramData } = req.body;
