@@ -2,6 +2,8 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
+import crypto from "crypto";
+
 import { sendResetCodeEmail } from "../utils/email.js";
 
 const router = express.Router();
@@ -251,6 +253,254 @@ router.post("/reset-password", async (req, res) => {
 
     res.status(500).json({
       error: "Failed to reset password",
+    });
+  }
+});
+
+/* =========================
+   CUSTOMER GOOGLE LOGIN
+   Verify Supabase token, then issue ReachSei JWT
+========================= */
+router.post("/google-login", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
+
+    if (!accessToken) {
+      return res.status(401).json({
+        error: "Google access token is required",
+      });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing backend Supabase configuration");
+
+      return res.status(500).json({
+        error: "Google login is not configured on the server",
+      });
+    }
+
+    // Verify the access token directly with Supabase.
+    const supabaseResponse = await fetch(
+      `${supabaseUrl.replace(/\/+$/, "")}/auth/v1/user`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!supabaseResponse.ok) {
+      return res.status(401).json({
+        error: "Invalid or expired Google session",
+      });
+    }
+
+    const googleUser = await supabaseResponse.json();
+
+    const email = googleUser.email?.trim().toLowerCase();
+    const name =
+      googleUser.user_metadata?.full_name ||
+      googleUser.user_metadata?.name ||
+      email?.split("@")[0];
+
+    if (!email || !name) {
+      return res.status(400).json({
+        error: "Google account is missing required profile information",
+      });
+    }
+
+    // Find an existing ReachSei account by email.
+    const existingResult = await pool.query(
+      `
+      SELECT id, name, email, phone
+      FROM users
+      WHERE LOWER(email) = $1
+      `,
+      [email]
+    );
+
+    let user;
+
+    if (existingResult.rows.length > 0) {
+      // Keep the existing ReachSei account and its database ID.
+      user = existingResult.rows[0];
+    } else {
+      // Google users can initially have no phone or password.
+      const createdResult = await pool.query(
+        `
+        INSERT INTO users (name, email)
+        VALUES ($1, $2)
+        RETURNING id, name, email, phone
+        `,
+        [name, email]
+      );
+
+      user = createdResult.rows[0];
+    }
+
+    // Issue the same type of backend JWT used by password login.
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: "customer",
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return res.json({
+      message: "Google login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      },
+    });
+  } catch (error) {
+    console.error("GOOGLE LOGIN ERROR:", error);
+
+    return res.status(500).json({
+      error: "Unable to complete Google login",
+    });
+  }
+});
+
+router.post("/telegram-login", async (req, res) => {
+  try {
+    const { hash, ...telegramData } = req.body;
+
+    const botToken = process.env.TELEGRAM_LOGIN_BOT_TOKEN;
+
+    if (!botToken) {
+      console.error("Missing TELEGRAM_LOGIN_BOT_TOKEN");
+      return res.status(500).json({
+        error: "Telegram login is not configured",
+      });
+    }
+
+    if (!hash || !telegramData.id || !telegramData.auth_date) {
+      return res.status(400).json({
+        error: "Telegram login data is incomplete",
+      });
+    }
+
+    // Reject login data older than 5 minutes.
+    const authDate = Number(telegramData.auth_date);
+
+    if (
+      !Number.isFinite(authDate) ||
+      Math.abs(Date.now() / 1000 - authDate) > 300
+    ) {
+      return res.status(401).json({
+        error: "Telegram login data has expired. Please try again.",
+      });
+    }
+
+    // Telegram Login Widget signature verification.
+    const dataCheckString = Object.keys(telegramData)
+      .sort()
+      .map((key) => `${key}=${telegramData[key]}`)
+      .join("\n");
+
+    const secretKey = crypto
+      .createHash("sha256")
+      .update(botToken)
+      .digest();
+
+    const expectedHash = crypto
+      .createHmac("sha256", secretKey)
+      .update(dataCheckString)
+      .digest("hex");
+
+    const suppliedHash = String(hash);
+
+    if (
+      !/^[a-f0-9]{64}$/i.test(suppliedHash) ||
+      !crypto.timingSafeEqual(
+        Buffer.from(expectedHash, "hex"),
+        Buffer.from(suppliedHash, "hex")
+      )
+    ) {
+      return res.status(401).json({
+        error: "Telegram signature verification failed",
+      });
+    }
+
+    const telegramId = String(telegramData.id);
+    const firstName = String(telegramData.first_name || "").trim();
+    const lastName = String(telegramData.last_name || "").trim();
+    const name = [firstName, lastName].filter(Boolean).join(" ");
+
+    if (!name) {
+      return res.status(400).json({
+        error: "Telegram profile name is missing",
+      });
+    }
+
+    // Find an account already linked to this Telegram ID.
+    const existingResult = await pool.query(
+      `SELECT id, name, email, phone
+       FROM users
+       WHERE telegram_id = $1`,
+      [telegramId]
+    );
+
+    let user;
+
+    if (existingResult.rows.length > 0) {
+      user = existingResult.rows[0];
+    } else {
+      // Telegram may not provide an email address.
+      // Do not invent an email or automatically link accounts by name.
+      const createdResult = await pool.query(
+        `INSERT INTO users (name, telegram_id)
+         VALUES ($1, $2)
+         RETURNING id, name, email, phone`,
+        [name, telegramId]
+      );
+
+      user = createdResult.rows[0];
+    }
+
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: "customer",
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({
+      message: "Telegram login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+      },
+    });
+  } catch (error) {
+    console.error("TELEGRAM LOGIN ERROR:", error);
+
+    return res.status(500).json({
+      error: "Unable to complete Telegram login",
     });
   }
 });
