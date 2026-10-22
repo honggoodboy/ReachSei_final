@@ -9,7 +9,9 @@ export default function Login() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [telegramLoading, setTelegramLoading] = useState(false);
 
+  // Redirect users who already have a saved login
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
 
@@ -18,36 +20,7 @@ export default function Login() {
     }
   }, [navigate]);
 
-  // Official Telegram Login Widget
-  useEffect(() => {
-    const container = document.getElementById(
-      "telegram-login-widget"
-    );
-
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "10");
-    script.setAttribute(
-      "data-auth-url",
-      `${window.location.origin}/auth/telegram/callback`
-    );
-    script.setAttribute("data-request-access", "write");
-
-    container.appendChild(script);
-
-    return () => {
-      container.innerHTML = "";
-    };
-  }, []);
-
-  // Google OAuth via Supabase
+  // Google OAuth through Supabase
   const handleGoogleLogin = async () => {
     try {
       setGoogleLoading(true);
@@ -71,6 +44,23 @@ export default function Login() {
     }
   };
 
+  // Telegram login through the backend
+  const handleTelegramLogin = () => {
+    const apiUrl = import.meta.env.VITE_API_URL;
+
+    if (!apiUrl) {
+      setMessage("Telegram login is not configured. Please try again later.");
+      return;
+    }
+
+    setMessage("");
+    setTelegramLoading(true);
+
+    window.location.assign(
+      `${apiUrl.replace(/\/+$/, "")}/auth/telegram/login`
+    );
+  };
+
   return (
     <section className="auth-page">
       <div className="auth-card-wrapper">
@@ -80,6 +70,7 @@ export default function Login() {
         </Link>
 
         <div className="auth-card">
+          {/* Logo and heading */}
           <div className="auth-header">
             <img
               src={logo}
@@ -94,6 +85,7 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Error message */}
           {message && (
             <div className="auth-alert-error" role="alert">
               <span className="auth-alert-icon">!</span>
@@ -101,13 +93,13 @@ export default function Login() {
             </div>
           )}
 
+          {/* Google and Telegram buttons */}
           <div className="auth-actions">
-            {/* Google Login */}
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={googleLoading}
-              className="google-sign-in-btn"
+              disabled={googleLoading || telegramLoading}
+              className="social-sign-in-btn"
             >
               <span className="social-btn-inner">
                 <img
@@ -115,6 +107,7 @@ export default function Login() {
                   alt=""
                   className="social-login-icon"
                 />
+
                 <span>
                   {googleLoading
                     ? "Connecting to Google..."
@@ -127,15 +120,29 @@ export default function Login() {
               <span>or</span>
             </div>
 
-            {/* Telegram Login */}
-            <div className="telegram-sign-in-box">
-              <div
-                id="telegram-login-widget"
-                className="telegram-widget-wrapper"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={handleTelegramLogin}
+              disabled={googleLoading || telegramLoading}
+              className="social-sign-in-btn"
+            >
+              <span className="social-btn-inner">
+                <img
+                  src="https://img.icons8.com/?size=100&id=lUktdBVdL4Kb&format=png&color=228BE6"
+                  alt=""
+                  className="social-login-icon"
+                />
+
+                <span>
+                  {telegramLoading
+                    ? "Connecting to Telegram..."
+                    : "Log in as Soeung"}
+                </span>
+              </span>
+            </button>
           </div>
 
+          {/* Terms */}
           <p className="auth-footer-terms">
             By signing in, you agree to ReachSei&apos;s{" "}
             <Link to="/contact">Terms of Service</Link>
