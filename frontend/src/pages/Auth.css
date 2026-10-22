@@ -1,7 +1,5 @@
-
 /* =========================================
    REACHSEI — SOCIAL AUTHENTICATION
-   Matching Google and Telegram Buttons
 ========================================= */
 
 .auth-page {
@@ -64,7 +62,7 @@
   text-align: center;
 }
 
-/* Circular Logo */
+/* Circular Logo — no square background or border */
 
 .auth-header {
   margin-bottom: 28px;
@@ -76,8 +74,8 @@
   height: 104px;
   margin: 0 auto 22px;
   object-fit: cover;
-  border: none;
   border-radius: 50%;
+  border: none;
   outline: none;
   box-shadow: none;
   background: transparent;
@@ -131,7 +129,7 @@
   font-weight: 700;
 }
 
-/* Social Login Layout */
+/* Buttons Layout */
 
 .auth-actions {
   display: flex;
@@ -140,9 +138,9 @@
   margin-bottom: 24px;
 }
 
-/* Identical Google and Telegram Buttons */
+/* Google Button */
 
-.social-sign-in-btn {
+.google-sign-in-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,24 +155,17 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.social-sign-in-btn:hover:not(:disabled) {
+.google-sign-in-btn:hover:not(:disabled) {
   background: #fafaf9;
   border-color: #bdbdb8;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.045);
 }
 
-.social-sign-in-btn:active:not(:disabled) {
-  transform: scale(0.99);
-}
-
-.social-sign-in-btn:disabled {
+.google-sign-in-btn:disabled {
   opacity: 0.65;
   cursor: wait;
 }
@@ -217,17 +208,24 @@
   white-space: nowrap;
 }
 
-/* Telegram Container — Clean without nested box */
+/* Telegram Container — same dimensions as Google */
 
 .telegram-sign-in-box {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 48px;
-  background: transparent;
-  border: none;
-  padding: 0;
+  min-height: 50px;
+  padding: 0 12px;
+  background: #ffffff;
+  border: 1px solid #dededb;
+  border-radius: 10px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.telegram-sign-in-box:hover {
+  background: #fafaf9;
+  border-color: #bdbdb8;
 }
 
 .telegram-widget-wrapper {
@@ -236,16 +234,16 @@
   justify-content: center;
   width: 100%;
   min-height: 48px;
+  overflow: hidden;
 }
 
 .telegram-widget-wrapper iframe {
   display: block;
   max-width: 100%;
   margin: 0 auto;
-  border: none !important;
 }
 
-/* Legal Terms */
+/* Terms */
 
 .auth-footer-terms {
   margin: 0;
@@ -268,13 +266,13 @@
 /* Keyboard Accessibility */
 
 .auth-back-link:focus-visible,
-.social-sign-in-btn:focus-visible,
+.google-sign-in-btn:focus-visible,
 .auth-footer-terms a:focus-visible {
   outline: 3px solid rgba(34, 158, 217, 0.35);
   outline-offset: 3px;
 }
 
-/* Responsive */
+/* Mobile */
 
 @media (max-width: 480px) {
   .auth-page {
@@ -309,19 +307,14 @@
   .auth-actions {
     gap: 14px;
   }
-
-  .social-sign-in-btn {
-    min-height: 50px;
-    font-size: 14px;
-  }
 }
 
-/* Reduced Motion */
-
 @media (prefers-reduced-motion: reduce) {
+
   .auth-back-link,
   .auth-back-arrow,
-  .social-sign-in-btn {
+  .google-sign-in-btn,
+  .telegram-sign-in-box {
     transition: none;
   }
 }

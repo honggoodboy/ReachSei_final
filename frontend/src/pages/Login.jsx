@@ -9,9 +9,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [telegramLoading, setTelegramLoading] = useState(false);
 
-  // Redirect users who already have a saved login
   useEffect(() => {
     const savedUser = localStorage.getItem("user");
 
@@ -20,33 +18,12 @@ export default function Login() {
     }
   }, [navigate]);
 
-  // Google OAuth through Supabase
-  const handleGoogleLogin = async () => {
-    try {
-      setGoogleLoading(true);
-      setMessage("");
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        setMessage(error.message);
-        setGoogleLoading(false);
-      }
-    } catch (error) {
-      console.error("Google login error:", error);
-      setMessage("Unable to start Google login. Please try again.");
-      setGoogleLoading(false);
-    }
-  };
-
-  // Load official Telegram Login Widget
+  // Official Telegram Login Widget
   useEffect(() => {
-    const container = document.getElementById("telegram-login-widget");
+    const container = document.getElementById(
+      "telegram-login-widget"
+    );
+
     if (!container) return;
 
     container.innerHTML = "";
@@ -70,6 +47,30 @@ export default function Login() {
     };
   }, []);
 
+  // Google OAuth via Supabase
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setMessage("");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        setMessage(error.message);
+        setGoogleLoading(false);
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      setMessage("Unable to start Google login. Please try again.");
+      setGoogleLoading(false);
+    }
+  };
+
   return (
     <section className="auth-page">
       <div className="auth-card-wrapper">
@@ -79,7 +80,6 @@ export default function Login() {
         </Link>
 
         <div className="auth-card">
-          {/* Logo and heading */}
           <div className="auth-header">
             <img
               src={logo}
@@ -94,7 +94,6 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Error message */}
           {message && (
             <div className="auth-alert-error" role="alert">
               <span className="auth-alert-icon">!</span>
@@ -102,13 +101,13 @@ export default function Login() {
             </div>
           )}
 
-          {/* Google and Telegram buttons */}
           <div className="auth-actions">
+            {/* Google Login */}
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={googleLoading}
-              className="social-sign-in-btn"
+              className="google-sign-in-btn"
             >
               <span className="social-btn-inner">
                 <img
@@ -116,7 +115,6 @@ export default function Login() {
                   alt=""
                   className="social-login-icon"
                 />
-
                 <span>
                   {googleLoading
                     ? "Connecting to Google..."
@@ -129,6 +127,7 @@ export default function Login() {
               <span>or</span>
             </div>
 
+            {/* Telegram Login */}
             <div className="telegram-sign-in-box">
               <div
                 id="telegram-login-widget"
@@ -137,7 +136,6 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Terms */}
           <p className="auth-footer-terms">
             By signing in, you agree to ReachSei&apos;s{" "}
             <Link to="/contact">Terms of Service</Link>
