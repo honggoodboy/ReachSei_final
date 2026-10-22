@@ -436,12 +436,12 @@ router.post("/telegram-login", async (req, res) => {
       });
     }
 
-    // Reject login data older than 5 minutes.
+    // Reject login data older than 24 hours (86400s) as per Telegram specification.
     const authDate = Number(telegramData.auth_date);
 
     if (
       !Number.isFinite(authDate) ||
-      Math.abs(Date.now() / 1000 - authDate) > 300
+      Math.abs(Date.now() / 1000 - authDate) > 86400
     ) {
       return res.status(401).json({
         error: "Telegram login data has expired. Please try again.",

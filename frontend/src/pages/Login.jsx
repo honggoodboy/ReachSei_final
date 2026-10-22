@@ -56,7 +56,7 @@ export default function Login() {
       : "https://reachsei.vercel.app";
 
     const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.src = "https://telegram.org/js/telegram-widget.js?24";
     script.async = true;
     script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
     script.setAttribute("data-size", "large");
