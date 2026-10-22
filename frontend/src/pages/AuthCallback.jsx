@@ -12,15 +12,39 @@ export default function AuthCallback() {
 
     async function finishLogin() {
       try {
-        // Get the authenticated Supabase session.
+        let accessToken = null;
+
+        // 1. Check if Supabase client already parsed session
         const {
           data: { session },
-          error: sessionError,
         } = await supabase.auth.getSession();
 
-        if (sessionError) throw sessionError;
+        if (session?.access_token) {
+          accessToken = session.access_token;
+        }
 
-        if (!session?.access_token || !session.user?.email) {
+        // 2. Check URL search params for PKCE code
+        if (!accessToken) {
+          const searchParams = new URLSearchParams(window.location.search);
+          const code = searchParams.get("code");
+          if (code) {
+            const { data: codeData } =
+              await supabase.auth.exchangeCodeForSession(code);
+            if (codeData?.session?.access_token) {
+              accessToken = codeData.session.access_token;
+            }
+          }
+        }
+
+        // 3. Check URL hash fragment for implicit access_token
+        if (!accessToken && window.location.hash) {
+          const hashParams = new URLSearchParams(
+            window.location.hash.replace(/^#/, "")
+          );
+          accessToken = hashParams.get("access_token");
+        }
+
+        if (!accessToken) {
           throw new Error(
             "Google session not found. Please try logging in again."
           );
@@ -30,11 +54,12 @@ export default function AuthCallback() {
           setMessage("Connecting your Google account to ReachSei...");
         }
 
-        const API_BASE_URL = import.meta.env.VITE_API_URL;
-
-        if (!API_BASE_URL) {
-          throw new Error("Backend API URL is not configured.");
-        }
+        const rawApiUrl = import.meta.env.VITE_API_URL || "";
+        const API_BASE_URL =
+          window.location.hostname !== "localhost" &&
+          (!rawApiUrl || rawApiUrl.includes("localhost"))
+            ? "https://reachsei-final.onrender.com"
+            : rawApiUrl || "http://localhost:5000";
 
         // Exchange the Supabase session for a ReachSei backend JWT.
         const response = await axios.post(
@@ -42,7 +67,7 @@ export default function AuthCallback() {
           {},
           {
             headers: {
-              Authorization: `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           }
         );

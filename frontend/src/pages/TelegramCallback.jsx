@@ -56,11 +56,12 @@ export default function TelegramCallback() {
           );
         }
 
-        const apiUrl = import.meta.env.VITE_API_URL;
-
-        if (!apiUrl) {
-          throw new Error("Backend API URL is not configured.");
-        }
+        const rawApiUrl = import.meta.env.VITE_API_URL || "";
+        const apiUrl =
+          window.location.hostname !== "localhost" &&
+          (!rawApiUrl || rawApiUrl.includes("localhost"))
+            ? "https://reachsei-final.onrender.com"
+            : rawApiUrl || "http://localhost:5000";
 
         const response = await axios.post(
           `${apiUrl}/users/telegram-login`,
