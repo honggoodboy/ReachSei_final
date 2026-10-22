@@ -259,16 +259,16 @@ router.post(
       const paywayItems =
         Array.isArray(items)
           ? items.map((item) => ({
-              name:
-                item.name ||
-                "Reachsei Product",
+            name:
+              item.name ||
+              "Reachsei Product",
 
-              quantity:
-                Number(item.quantity) || 1,
+            quantity:
+              Number(item.quantity) || 1,
 
-              price:
-                Number(item.price) || 0,
-            }))
+            price:
+              Number(item.price) || 0,
+          }))
           : [];
 
 
@@ -947,7 +947,8 @@ router.post("/confirm-paid", async (req, res) => {
   }
 });
 
-
+console.log("PAYWAY QR STRING:", data.qrString);
+console.log("PAYWAY DEEPLINK:", data.abapay_deeplink);
 /* =========================================================
    EXPORT
 ========================================================= */

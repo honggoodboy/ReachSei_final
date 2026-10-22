@@ -12,15 +12,20 @@ const BARAY_CHECKOUT_URL = "https://pay.baray.io";
 // These names match the environment variables in your Render screenshot.
 // Confirm with Baray that CIPHER_KEY is the AES key and SECRET_KEY is the IV.
 function getBarayKey() {
-  const key = Buffer.from(
+  let key = Buffer.from(
+    process.env.BARAY_SECRET_KEY || "",
+    "base64"
+  );
+
+  let iv = Buffer.from(
     process.env.BARAY_CIPHER_KEY || "",
     "base64"
   );
 
-  const iv = Buffer.from(
-    process.env.BARAY_SECRET_KEY || "",
-    "base64"
-  );
+  // If variables are swapped in env, auto-detect by length (AES key is 32 bytes, IV is 16 bytes)
+  if (key.length === 16 && iv.length === 32) {
+    [key, iv] = [iv, key];
+  }
 
   if (key.length !== 32 || iv.length !== 16) {
     throw new Error(

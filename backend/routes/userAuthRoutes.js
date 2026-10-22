@@ -5,6 +5,7 @@ import pool from "../db.js";
 import crypto from "crypto";
 
 import { sendResetCodeEmail } from "../utils/email.js";
+import { verifyUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -502,6 +503,118 @@ router.post("/telegram-login", async (req, res) => {
     return res.status(500).json({
       error: "Unable to complete Telegram login",
     });
+  }
+});
+
+/* =========================
+   UPDATE CUSTOMER PROFILE
+   PUT /users/:id
+========================= */
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({
+        error: "Name and email are required",
+      });
+    }
+
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Check if email already used by another user
+    const existing = await pool.query(
+      "SELECT id FROM users WHERE LOWER(email) = $1 AND id <> $2",
+      [cleanEmail, id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({
+        error: "Email is already in use by another account",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE users
+      SET name = $1, email = $2, phone = COALESCE($3, phone)
+      WHERE id = $4
+      RETURNING id, name, email, phone
+      `,
+      [cleanName, cleanEmail, phone ? phone.trim() : null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({
+      message: "Profile updated successfully",
+      user: result.rows[0],
+    });
+  } catch (error) {
+    console.error("UPDATE PROFILE ERROR:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/* =========================
+   CHANGE PASSWORD
+   PUT /users/:id/password
+========================= */
+router.put("/:id/password", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({
+        error: "New password must be at least 6 characters long",
+      });
+    }
+
+    const userResult = await pool.query(
+      "SELECT id, password FROM users WHERE id = $1",
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const user = userResult.rows[0];
+
+    // If user already has a password, verify the current one
+    if (user.password) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          error: "Current password is required",
+        });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({
+          error: "Current password is incorrect",
+        });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await pool.query(
+      "UPDATE users SET password = $1 WHERE id = $2",
+      [hashedPassword, id]
+    );
+
+    res.json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    console.error("CHANGE PASSWORD ERROR:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 

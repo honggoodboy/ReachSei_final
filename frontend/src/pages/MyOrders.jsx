@@ -33,6 +33,7 @@ export default function MyOrders() {
 
   const fetchOrders = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("userToken");
 
     if (!user) {
       navigate("/login");
@@ -42,7 +43,9 @@ export default function MyOrders() {
     try {
       setLoading(true);
 
-      const res = await axios.get(`${API_BASE_URL}/orders/user/${user.id}`);
+      const res = await axios.get(`${API_BASE_URL}/orders/user/${user.id}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
       setOrders(res.data);
     } catch (error) {
@@ -61,7 +64,14 @@ export default function MyOrders() {
     if (!confirmCancel) return;
 
     try {
-      await axios.put(`${API_BASE_URL}/orders/${id}/cancel`);
+      const token = localStorage.getItem("userToken");
+      await axios.put(
+        `${API_BASE_URL}/orders/${id}/cancel`,
+        {},
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
 
       setOrders((prev) =>
         prev.map((order) =>
