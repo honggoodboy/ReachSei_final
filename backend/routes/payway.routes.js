@@ -1,11 +1,13 @@
 import express from "express";
 import axios from "axios";
 import crypto from "crypto";
+import pool from "../db.js";
+import { sendTelegramMessage } from "../utils/telegram.js";
 
 const router = express.Router();
 
 /* =========================================================
-   ABA PAYWAY SANDBOX CONFIG
+   ABA PAYWAY CONFIG
 ========================================================= */
 
 const PAYWAY_API_URL =
@@ -81,31 +83,6 @@ function generatePayWayHash({
   lifetime,
   qrImageTemplate,
 }) {
-
-  /*
-    ABA PayWay QR API hash order:
-
-    req_time
-    merchant_id
-    tran_id
-    amount
-    items
-    first_name
-    last_name
-    email
-    phone
-    purchase_type
-    payment_option
-    callback_url
-    return_deeplink
-    currency
-    custom_fields
-    return_params
-    payout
-    lifetime
-    qr_image_template
-  */
-
   const hashString =
     reqTime +
     merchantId +
@@ -128,27 +105,29 @@ function generatePayWayHash({
     qrImageTemplate;
 
   return crypto
-    .createHmac(
-      "sha512",
-      API_KEY
-    )
+    .createHmac("sha512", API_KEY)
     .update(hashString, "utf8")
     .digest("base64");
 }
 
 
 /* =========================================================
-   TEST / GENERATE QR
+   GENERATE ABA PAYWAY QR
+   POST /api/payway/generate-qr
 ========================================================= */
 
 router.post(
   "/generate-qr",
   async (req, res) => {
-
     try {
+
+      /* =====================================================
+         CHECK CONFIG
+      ===================================================== */
 
       if (!MERCHANT_ID) {
         return res.status(500).json({
+          success: false,
           error:
             "PAYWAY_MERCHANT_ID is not configured.",
         });
@@ -156,6 +135,7 @@ router.post(
 
       if (!API_KEY) {
         return res.status(500).json({
+          success: false,
           error:
             "PAYWAY_API_KEY is not configured.",
         });
@@ -163,11 +143,16 @@ router.post(
 
       if (!CALLBACK_URL) {
         return res.status(500).json({
+          success: false,
           error:
             "PAYWAY_CALLBACK_URL is not configured.",
         });
       }
 
+
+      /* =====================================================
+         REQUEST DATA
+      ===================================================== */
 
       const {
         amount,
@@ -181,32 +166,73 @@ router.post(
 
 
       /* =====================================================
-         VALIDATE
+         VALIDATION
       ===================================================== */
 
-      const numericAmount =
-        Number(amount);
+      const numericAmount = Number(amount);
 
       if (
         !Number.isFinite(numericAmount) ||
         numericAmount <= 0
       ) {
         return res.status(400).json({
+          success: false,
           error: "Invalid payment amount.",
         });
       }
 
       if (!orderId) {
         return res.status(400).json({
+          success: false,
           error: "orderId is required.",
         });
       }
 
 
-      /*
-        PayWay tran_id max length is limited.
-        Make a short unique transaction ID.
-      */
+      /* =====================================================
+         CHECK ORDER EXISTS
+      ===================================================== */
+
+      const orderResult = await pool.query(
+        `
+          SELECT
+            id,
+            payment_status
+          FROM orders
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [orderId]
+      );
+
+      if (orderResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: "Order not found.",
+        });
+      }
+
+      const existingOrder =
+        orderResult.rows[0];
+
+
+      /* =====================================================
+         PREVENT DUPLICATE PAYMENT
+      ===================================================== */
+
+      if (
+        existingOrder.payment_status === "paid"
+      ) {
+        return res.status(400).json({
+          success: false,
+          error: "This order has already been paid.",
+        });
+      }
+
+
+      /* =====================================================
+         CREATE UNIQUE PAYWAY TRANSACTION ID
+      ===================================================== */
 
       const cleanOrderId =
         String(orderId)
@@ -231,17 +257,19 @@ router.post(
       ===================================================== */
 
       const paywayItems =
-        items.map((item) => ({
-          name:
-            item.name ||
-            "Reachsei Product",
+        Array.isArray(items)
+          ? items.map((item) => ({
+              name:
+                item.name ||
+                "Reachsei Product",
 
-          quantity:
-            Number(item.quantity) || 1,
+              quantity:
+                Number(item.quantity) || 1,
 
-          price:
-            Number(item.price) || 0,
-        }));
+              price:
+                Number(item.price) || 0,
+            }))
+          : [];
 
 
       const itemsBase64 =
@@ -281,7 +309,7 @@ router.post(
 
 
       /* =====================================================
-         HASH
+         GENERATE HASH
       ===================================================== */
 
       const hash =
@@ -313,7 +341,8 @@ router.post(
       ===================================================== */
 
       const payload = {
-        req_time: reqTime,
+        req_time:
+          reqTime,
 
         merchant_id:
           MERCHANT_ID,
@@ -334,7 +363,7 @@ router.post(
           phone,
 
         amount:
-          Number(formattedAmount),
+          formattedAmount,
 
         purchase_type:
           purchaseType,
@@ -374,10 +403,18 @@ router.post(
       console.log(
         "PAYWAY REQUEST:",
         {
-          merchant_id: MERCHANT_ID,
-          tran_id: tranId,
-          amount: formattedAmount,
+          merchant_id:
+            MERCHANT_ID,
+
+          tran_id:
+            tranId,
+
+          amount:
+            formattedAmount,
+
           currency,
+
+          orderId,
         }
       );
 
@@ -408,21 +445,25 @@ router.post(
       console.log(
         "PAYWAY RESPONSE:",
         {
-          status: data?.status,
-          tran_id: tranId,
+          status:
+            data?.status,
+
+          tran_id:
+            tranId,
         }
       );
 
 
       /* =====================================================
-         CHECK RESPONSE
+         CHECK PAYWAY RESPONSE
       ===================================================== */
 
       if (
         data?.status?.code !== "0"
       ) {
-
         return res.status(400).json({
+          success: false,
+
           error:
             data?.status?.message ||
             "PayWay rejected the request.",
@@ -434,11 +475,39 @@ router.post(
 
 
       /* =====================================================
+         SAVE PAYWAY TRANSACTION
+         INTO REACHSEI ORDER
+      ===================================================== */
+
+      await pool.query(
+        `
+          UPDATE orders
+          SET
+            payment_reference = $1,
+            payment_status = 'unpaid'
+          WHERE id = $2
+        `,
+        [
+          tranId,
+          orderId,
+        ]
+      );
+
+
+      console.log(
+        "PAYWAY TRANSACTION SAVED:",
+        {
+          orderId,
+          tranId,
+        }
+      );
+
+
+      /* =====================================================
          SUCCESS
       ===================================================== */
 
       return res.json({
-
         success: true,
 
         orderId,
@@ -446,7 +515,7 @@ router.post(
         tranId,
 
         amount:
-          Number(formattedAmount),
+          formattedAmount,
 
         currency,
 
@@ -463,6 +532,7 @@ router.post(
           data.status,
       });
 
+
     } catch (error) {
 
       console.error(
@@ -472,13 +542,11 @@ router.post(
       );
 
       return res.status(500).json({
-
         success: false,
 
         error:
           error.response?.data ||
           error.message,
-
       });
     }
   }
@@ -486,12 +554,12 @@ router.post(
 
 
 /* =========================================================
-   PAYWAY CALLBACK
+   ABA PAYWAY CALLBACK
+   POST /api/payway/callback
 ========================================================= */
 
 router.post(
   "/callback",
-  express.json(),
   async (req, res) => {
 
     try {
@@ -517,6 +585,10 @@ router.post(
       );
 
 
+      /* =====================================================
+         CALLBACK DATA
+      ===================================================== */
+
       const {
         transaction_id,
         merchant_ref,
@@ -530,42 +602,183 @@ router.post(
       } = req.body;
 
 
-      /*
-        payment_status_code === 0
-        means successful payment
-        according to ABA's QR API docs.
-      */
+      /* =====================================================
+         CHECK PAYMENT SUCCESS
+      ===================================================== */
 
-      if (
+      const paymentApproved =
         Number(payment_status_code) === 0 ||
-        payment_status === "APPROVED"
-      ) {
+        payment_status === "APPROVED";
+
+
+      if (!paymentApproved) {
 
         console.log(
-          "PAYWAY PAYMENT APPROVED:",
+          "PAYWAY PAYMENT NOT APPROVED:",
           {
             transaction_id,
             merchant_ref,
-            payment_amount,
-            payment_currency,
-            bank_ref,
-            apv,
+            payment_status,
+            payment_status_code,
+          }
+        );
+
+        return res.status(200).json({
+          success: true,
+          message:
+            "Payment not approved.",
+        });
+      }
+
+
+      /* =====================================================
+         PAYMENT APPROVED
+      ===================================================== */
+
+      console.log(
+        "PAYWAY PAYMENT APPROVED:",
+        {
+          transaction_id,
+          merchant_ref,
+          payment_amount,
+          original_amount,
+          payment_currency,
+          bank_ref,
+          apv,
+        }
+      );
+
+
+      /* =====================================================
+         FIND REACHSEI ORDER
+      ===================================================== */
+
+      const orderResult =
+        await pool.query(
+          `
+            SELECT
+              id,
+              payment_status
+            FROM orders
+            WHERE
+              payment_reference = $1
+              OR payment_reference = $2
+            LIMIT 1
+          `,
+          [
+            transaction_id || "",
+            merchant_ref || "",
+          ]
+        );
+
+
+      if (
+        orderResult.rows.length === 0
+      ) {
+
+        console.error(
+          "PAYWAY ORDER NOT FOUND:",
+          {
+            transaction_id,
+            merchant_ref,
           }
         );
 
         /*
-          NEXT STEP:
-          Update the Reachsei order here.
+          Return 200 because PayWay already
+          delivered the callback.
 
-          We will connect:
-          merchant_ref -> Reachsei order
+          The payment can be investigated
+          using the transaction ID.
         */
+
+        return res.status(200).json({
+          success: true,
+
+          message:
+            "Payment received but order was not found.",
+        });
       }
 
 
+      const order =
+        orderResult.rows[0];
+
+
+      /* =====================================================
+         PREVENT DUPLICATE UPDATE
+      ===================================================== */
+
+      if (
+        order.payment_status === "paid"
+      ) {
+
+        console.log(
+          `ORDER ${order.id} IS ALREADY PAID`
+        );
+
+        return res.status(200).json({
+          success: true,
+
+          message:
+            "Order already paid.",
+        });
+      }
+
+
+      /* =====================================================
+         UPDATE ORDER
+      ===================================================== */
+
+      const paymentReference =
+        transaction_id ||
+        merchant_ref;
+
+
+      await pool.query(
+        `
+          UPDATE orders
+          SET
+            payment_status = 'paid',
+            payment_reference = $1,
+            payment_proof = NULL
+          WHERE id = $2
+        `,
+        [
+          paymentReference,
+          order.id,
+        ]
+      );
+
+
+      console.log(
+        `PAYWAY ORDER ${order.id} MARKED AS PAID`
+      );
+
+      /* Send Telegram Notification on Paid */
+      await sendPayWayTelegramNotification(order.id, paymentReference);
+
+
+      /* =====================================================
+         SUCCESS RESPONSE
+      ===================================================== */
+
       return res.status(200).json({
         success: true,
+
+        message:
+          "Payment processed successfully.",
+
+        orderId:
+          order.id,
+
+        transactionId:
+          transaction_id,
+
+        paymentStatus:
+          "paid",
       });
+
 
     } catch (error) {
 
@@ -576,10 +789,167 @@ router.post(
 
       return res.status(500).json({
         success: false,
+
+        error:
+          error.message,
       });
     }
   }
 );
 
+
+/* =========================================================
+   HELPERS FOR TELEGRAM NOTIFICATION
+========================================================= */
+
+async function sendPayWayTelegramNotification(orderId, paymentReference) {
+  try {
+    const orderRes = await pool.query(
+      `
+        SELECT 
+          o.id,
+          o.order_code,
+          o.total,
+          o.delivery_fee,
+          od.full_name,
+          od.phone,
+          od.province,
+          od.address,
+          od.payment_method
+        FROM orders o
+        JOIN order_details od ON o.id = od.order_id
+        WHERE o.id = $1
+        LIMIT 1
+      `,
+      [orderId]
+    );
+
+    if (orderRes.rows.length === 0) return;
+    const order = orderRes.rows[0];
+
+    const itemsRes = await pool.query(
+      `
+        SELECT 
+          oi.quantity,
+          oi.price,
+          oi.size,
+          p.name
+        FROM order_items oi
+        LEFT JOIN products p ON oi.product_id = p.id
+        WHERE oi.order_id = $1
+      `,
+      [orderId]
+    );
+
+    const telegramProductsText = itemsRes.rows
+      .map((item) => {
+        const size = item.size || "No size";
+        return `• ${item.name || "Product"} | Size: ${size} | Qty: ${item.quantity} | $${Number(item.price).toFixed(2)}`;
+      })
+      .join("\n");
+
+    const deliveryFee = Number(order.delivery_fee || 0);
+    const total = Number(order.total || 0);
+
+    await sendTelegramMessage(`
+🛒 <b>New Reachsei Order (Paid via ABA PayWay)</b>
+
+<b>Order:</b> ${order.order_code || order.id}
+<b>Database ID:</b> ${order.id}
+
+<b>Customer:</b> ${order.full_name || "Customer"}
+<b>Phone:</b> ${order.phone || "N/A"}
+<b>Province:</b> ${order.province || "N/A"}
+<b>Address:</b> ${order.address || "N/A"}
+<b>Payment Method:</b> ABA PayWay (Paid)
+<b>Payment Reference:</b> ${paymentReference || "None"}
+<b>Delivery Fee:</b> $${deliveryFee.toFixed(2)}
+<b>Total:</b> $${total.toFixed(2)}
+
+<b>Products:</b>
+${telegramProductsText}
+    `);
+  } catch (error) {
+    console.error("Failed to send Telegram notification for PayWay order:", error.message);
+  }
+}
+
+
+/* =========================================================
+   CHECK ORDER STATUS
+   GET /api/payway/check-status/:orderId
+========================================================= */
+
+router.get("/check-status/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    const result = await pool.query(
+      `SELECT id, order_code, payment_status, payment_reference FROM orders WHERE id = $1 LIMIT 1`,
+      [orderId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Order not found." });
+    }
+
+    const order = result.rows[0];
+
+    return res.json({
+      success: true,
+      orderId: order.id,
+      orderCode: order.order_code,
+      paymentStatus: order.payment_status,
+      paymentReference: order.payment_reference,
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+/* =========================================================
+   CONFIRM PAID (MANUAL / FALLBACK CONFIRMATION)
+   POST /api/payway/confirm-paid
+========================================================= */
+
+router.post("/confirm-paid", async (req, res) => {
+  try {
+    const { orderId, tranId } = req.body;
+
+    if (!orderId) {
+      return res.status(400).json({ success: false, error: "orderId is required." });
+    }
+
+    const orderResult = await pool.query(
+      `SELECT id, payment_status FROM orders WHERE id = $1 LIMIT 1`,
+      [orderId]
+    );
+
+    if (orderResult.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Order not found." });
+    }
+
+    const order = orderResult.rows[0];
+
+    if (order.payment_status !== "paid") {
+      await pool.query(
+        `UPDATE orders SET payment_status = 'paid', payment_reference = COALESCE($1, payment_reference) WHERE id = $2`,
+        [tranId || null, orderId]
+      );
+
+      await sendPayWayTelegramNotification(orderId, tranId || "Confirmed");
+    }
+
+    return res.json({ success: true, message: "Order confirmed as paid." });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 export default router;

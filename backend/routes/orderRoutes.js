@@ -435,16 +435,31 @@ router.post(
       */
 
       const paymentMethod =
-        "bank";
+  String(
+    req.body.paymentMethod || "bank"
+  )
+    .trim()
+    .toLowerCase();
 
-      if (!req.file) {
+if (
+  paymentMethod !== "bank" &&
+  paymentMethod !== "payway" &&
+  paymentMethod !== "baray"
+) {
+  return res.status(400).json({
+    error: "Invalid payment method",
+  });
+}
 
-        return res.status(400).json({
-          error:
-            "Payment proof is required",
-        });
-
-      }
+if (
+  paymentMethod === "bank" &&
+  !req.file
+) {
+  return res.status(400).json({
+    error:
+      "Payment proof is required",
+  });
+}
 
       /* =========================
          NORMALIZE DELIVERY METHOD
@@ -662,10 +677,14 @@ router.post(
       ========================= */
 
       const paymentProof =
-        req.file.path;
+  req.file
+    ? req.file.path
+    : null;
 
-      const paymentStatus =
-        "pending_review";
+const paymentStatus =
+  ["payway", "baray"].includes(paymentMethod)
+    ? "unpaid"
+    : "pending_review";
 
       const {
         dailyOrderNumber,
@@ -907,57 +926,59 @@ router.post(
          TELEGRAM NOTIFICATION
       ========================= */
 
-      const telegramProductsText =
-        verifiedItems
-          .map((item) => {
+      if (paymentMethod !== "payway") {
+        const telegramProductsText =
+          verifiedItems
+            .map((item) => {
 
-            const size =
-              item.size ||
-              "No size";
+              const size =
+                item.size ||
+                "No size";
 
-            return (
-              `• ${item.name || "Product"} | ` +
-              `Size: ${size} | ` +
-              `Qty: ${item.quantity} | ` +
-              `$${item.price.toFixed(2)}`
-            );
+              return (
+                `• ${item.name || "Product"} | ` +
+                `Size: ${size} | ` +
+                `Qty: ${item.quantity} | ` +
+                `$${item.price.toFixed(2)}`
+              );
 
-          })
-          .join("\n");
+            })
+            .join("\n");
 
-      await sendTelegramMessage(`
+        await sendTelegramMessage(`
 🛒 <b>New Reachsei Order</b>
 
 <b>Order:</b> ${
-        order.order_code ||
-        order.id
-      }
+          order.order_code ||
+          order.id
+        }
 <b>Database ID:</b> ${
-        order.id
-      }
+          order.id
+        }
 
 <b>Customer:</b> ${fullName}
 <b>Phone:</b> ${phone}
 <b>Province:</b> ${province}
 <b>Address:</b> ${address}
 <b>Delivery Method:</b> ${
-        deliveryMethod ===
-        "pickup"
-          ? "Pick Up"
-          : "Delivery"
-      }
+          deliveryMethod ===
+          "pickup"
+            ? "Pick Up"
+            : "Delivery"
+        }
 <b>Payment Method:</b> QR Payment
 <b>Payment Reference:</b> ${
-        paymentReference ||
-        "None"
-      }
+          paymentReference ||
+          "None"
+        }
 <b>Delivery Fee:</b> $${calculatedDeliveryFee.toFixed(2)}
 <b>Total:</b> $${calculatedTotal.toFixed(2)}
 <b>Payment Proof:</b> ${paymentProof}
 
 <b>Products:</b>
 ${telegramProductsText}
-      `);
+        `);
+      }
 
       /* =========================
          RESPONSE
@@ -1450,7 +1471,48 @@ router.put(
 
   }
 );
+router.get("/:id/payment-status", async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    const result = await pool.query(
+      `
+      SELECT
+        id,
+        payment_status,
+        payment_reference
+      FROM orders
+      WHERE id = $1
+      LIMIT 1
+      `,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Order not found",
+      });
+    }
+
+    res.json({
+      orderId: result.rows[0].id,
+      paymentStatus:
+        result.rows[0].payment_status,
+      paymentReference:
+        result.rows[0].payment_reference,
+    });
+
+  } catch (error) {
+    console.error(
+      "Payment status error:",
+      error
+    );
+
+    res.status(500).json({
+      error: "Failed to check payment status",
+    });
+  }
+});
 /* =========================
    DELETE ORDER
 ========================= */
