@@ -7,6 +7,7 @@ import {
   Route,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 
 import { CartProvider } from "./context/CartContext";
@@ -55,6 +56,23 @@ function ScrollToTop() {
   return null;
 }
 
+function AuthHashHandler() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (
+      window.location.hash &&
+      window.location.hash.includes("access_token=") &&
+      location.pathname !== "/auth/callback"
+    ) {
+      navigate(`/auth/callback${window.location.hash}`, { replace: true });
+    }
+  }, [location, navigate]);
+
+  return null;
+}
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ToastProvider>
@@ -62,6 +80,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <WishlistProvider>
           <BrowserRouter>
             <ScrollToTop />
+            <AuthHashHandler />
 
             <Routes>
               {/* Main shop */}

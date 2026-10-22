@@ -44,31 +44,30 @@ export default function Login() {
     }
   };
 
-  // Load official Telegram Login Widget
-  useEffect(() => {
-    const container = document.getElementById("telegram-login-widget");
-    if (!container) return;
+  // Telegram OAuth direct login
+  const handleTelegramLogin = () => {
+    try {
+      setTelegramLoading(true);
+      setMessage("");
 
-    container.innerHTML = "";
+      const botId = "8885168265";
+      const origin = window.location.origin.includes("localhost")
+        ? "https://reachsei.vercel.app"
+        : window.location.origin;
 
-    const script = document.createElement("script");
-    script.src = "https://telegram.org/js/telegram-widget.js?22";
-    script.async = true;
-    script.setAttribute("data-telegram-login", "ReachSei_Login_Bot");
-    script.setAttribute("data-size", "large");
-    script.setAttribute("data-radius", "10");
-    script.setAttribute(
-      "data-auth-url",
-      `${window.location.origin}/auth/telegram/callback`
-    );
-    script.setAttribute("data-request-access", "write");
+      const returnTo = `${origin}/auth/telegram/callback`;
 
-    container.appendChild(script);
+      const telegramAuthUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(
+        origin
+      )}&embed=0&request_access=write&return_to=${encodeURIComponent(returnTo)}`;
 
-    return () => {
-      container.innerHTML = "";
-    };
-  }, []);
+      window.location.assign(telegramAuthUrl);
+    } catch (err) {
+      console.error("Telegram login error:", err);
+      setMessage("Unable to start Telegram login. Please try again.");
+      setTelegramLoading(false);
+    }
+  };
 
   return (
     <section className="auth-page">
@@ -107,7 +106,7 @@ export default function Login() {
             <button
               type="button"
               onClick={handleGoogleLogin}
-              disabled={googleLoading}
+              disabled={googleLoading || telegramLoading}
               className="social-sign-in-btn"
             >
               <span className="social-btn-inner">
@@ -129,12 +128,26 @@ export default function Login() {
               <span>or</span>
             </div>
 
-            <div className="telegram-sign-in-box">
-              <div
-                id="telegram-login-widget"
-                className="telegram-widget-wrapper"
-              />
-            </div>
+            <button
+              type="button"
+              onClick={handleTelegramLogin}
+              disabled={googleLoading || telegramLoading}
+              className="social-sign-in-btn"
+            >
+              <span className="social-btn-inner">
+                <img
+                  src="https://img.icons8.com/?size=100&id=lUktdBVdL4Kb&format=png&color=228BE6"
+                  alt=""
+                  className="social-login-icon"
+                />
+
+                <span>
+                  {telegramLoading
+                    ? "Connecting to Telegram..."
+                    : "Continue with Telegram"}
+                </span>
+              </span>
+            </button>
           </div>
 
           {/* Terms */}

@@ -12,8 +12,43 @@ export default function TelegramCallback() {
 
     async function finishLogin() {
       try {
-        const params = new URLSearchParams(window.location.search);
-        const telegramData = Object.fromEntries(params.entries());
+        let telegramData = {};
+
+        // 1. Try URL query parameters
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get("id") && searchParams.get("hash")) {
+          telegramData = Object.fromEntries(searchParams.entries());
+        }
+
+        // 2. Try URL hash fragment (Telegram OAuth web returns #tgAuthResult=... or #id=...)
+        if (!telegramData.id && window.location.hash) {
+          const rawHash = window.location.hash.replace(/^#/, "");
+          if (rawHash.includes("tgAuthResult=")) {
+            try {
+              const match = rawHash.match(/tgAuthResult=([^&]+)/);
+              if (match && match[1]) {
+                const base64 = match[1].replace(/-/g, "+").replace(/_/g, "/");
+                const jsonStr = decodeURIComponent(
+                  atob(base64)
+                    .split("")
+                    .map(
+                      (c) =>
+                        "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
+                    )
+                    .join("")
+                );
+                telegramData = JSON.parse(jsonStr);
+              }
+            } catch (err) {
+              console.error("Failed to parse tgAuthResult base64:", err);
+            }
+          } else {
+            const hashParams = new URLSearchParams(rawHash);
+            if (hashParams.get("id") && hashParams.get("hash")) {
+              telegramData = Object.fromEntries(hashParams.entries());
+            }
+          }
+        }
 
         if (!telegramData.id || !telegramData.hash) {
           throw new Error(
