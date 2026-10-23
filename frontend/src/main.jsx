@@ -7,7 +7,6 @@ import {
   Route,
   Navigate,
   useLocation,
-  useNavigate,
 } from "react-router-dom";
 
 import { CartProvider } from "./context/CartContext";
@@ -31,7 +30,6 @@ import ShopLayout from "./components/ShopLayout";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import AuthCallback from "./pages/AuthCallback.jsx";
 import MyOrders from "./pages/MyOrders";
 import AdminReviews from "./pages/AdminReviews";
 import WishlistPage from "./pages/WishlistPage";
@@ -43,7 +41,6 @@ import ContactPage from "./pages/ContactPage";
 import ReceiptPage from "./pages/ReceiptPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import TelegramCallback from "./pages/TelegramCallback.jsx";
 import KoompiCallback from "./pages/KoompiCallback.jsx";
 import "./index.css";
 
@@ -57,27 +54,7 @@ function ScrollToTop() {
   return null;
 }
 
-function AuthHashHandler() {
-  const location = useLocation();
 
-  useEffect(() => {
-    if (
-      window.location.hash &&
-      window.location.hash.includes("access_token=") &&
-      location.pathname !== "/auth/callback"
-    ) {
-      window.location.replace(`/auth/callback${window.location.hash}`);
-    } else if (
-      window.location.hash &&
-      window.location.hash.includes("tgAuthResult=") &&
-      location.pathname !== "/auth/telegram/callback"
-    ) {
-      window.location.replace(`/auth/telegram/callback${window.location.hash}`);
-    }
-  }, [location]);
-
-  return null;
-}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
@@ -86,7 +63,6 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <WishlistProvider>
           <BrowserRouter>
             <ScrollToTop />
-            <AuthHashHandler />
 
             <Routes>
               {/* Main shop */}
@@ -160,15 +136,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                 element={<Navigate to="/login" replace />}
               />
 
-              {/* Google OAuth callback */}
-              <Route
-                path="/auth/callback"
-                element={<AuthCallback />}
-              />
-              <Route
-                path="/auth/telegram/callback"
-                element={<TelegramCallback />}
-              />
+              {/* KOOMPI ID OAuth callback */}
               <Route
                 path="/auth/koompi/callback"
                 element={<KoompiCallback />}

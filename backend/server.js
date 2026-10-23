@@ -92,15 +92,6 @@ app.use(
   userAuthRoutes
 );
 
-/* Aliases for Telegram auth at root path */
-app.get("/telegram/login", (req, res) => {
-  res.redirect("/users/telegram/login");
-});
-app.post("/telegram-login", (req, res, next) => {
-  req.url = "/telegram-login";
-  userAuthRoutes(req, res, next);
-});
-
 /* Aliases for KOOMPI auth */
 app.get("/koompi/login", (req, res) => {
   res.redirect("/users/koompi/login");
