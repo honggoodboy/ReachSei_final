@@ -10,6 +10,35 @@ import { verifyUser } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+/* ======================================================
+   URL HELPERS
+   Resolve the correct frontend/backend production URLs
+   even when Render env vars still point to localhost.
+====================================================== */
+
+const PROD_FRONTEND_URL = "https://reachsei.vercel.app";
+const PROD_BACKEND_URL  = "https://reachsei-final.onrender.com";
+
+/**
+ * Returns the correct frontend origin.
+ * If FRONTEND_URL is unset or is a localhost address and we are
+ * running in production (NODE_ENV !== 'development' or PORT is Render's),
+ * return the hardcoded production URL instead.
+ */
+function resolveFrontendUrl() {
+  const raw = (process.env.FRONTEND_URL || "").replace(/\/+$/, "");
+  const isLocalhost = !raw || raw.includes("localhost") || raw.includes("127.0.0.1");
+  const isProduction = process.env.NODE_ENV === "production" ||
+    (!process.env.NODE_ENV && !raw.includes("localhost"));
+
+  // On Render (or any host), if FRONTEND_URL is missing / localhost, use prod URL
+  if (isLocalhost && isProduction) return PROD_FRONTEND_URL;
+  // If explicitly set to a non-localhost value, trust it
+  if (!isLocalhost) return raw;
+  // Otherwise (local dev with localhost FRONTEND_URL) keep it
+  return raw || PROD_FRONTEND_URL;
+}
+
 /* =========================
    CUSTOMER REGISTER
 ========================= */
@@ -410,9 +439,7 @@ async function processKoompiAuthCode(code, clientRedirectUri) {
     process.env.KOOMPI_CLIENT_ID ||
     "pk_aef9e8b4-751b-4734-8aee-8acd4c039965";
   const clientSecret = process.env.KOOMPI_CLIENT_SECRET || "";
-  const rawFrontendUrl =
-    process.env.FRONTEND_URL || "https://reachsei.vercel.app";
-  const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+  const frontendUrl = resolveFrontendUrl();
   const redirectUri =
     clientRedirectUri ||
     process.env.KOOMPI_REDIRECT_URI ||
@@ -567,9 +594,7 @@ router.get("/koompi/login", (req, res) => {
   const clientId =
     process.env.KOOMPI_CLIENT_ID ||
     "pk_aef9e8b4-751b-4734-8aee-8acd4c039965";
-  const rawFrontendUrl =
-    process.env.FRONTEND_URL || "https://reachsei.vercel.app";
-  const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+  const frontendUrl = resolveFrontendUrl();
 
   const redirectUri =
     process.env.KOOMPI_REDIRECT_URI || `${frontendUrl}/auth/koompi/callback`;
@@ -614,9 +639,7 @@ router.post("/koompi/callback", async (req, res) => {
 router.get("/koompi/callback", async (req, res) => {
   try {
     const { code, error: kidError } = req.query;
-    const rawFrontendUrl =
-      process.env.FRONTEND_URL || "https://reachsei.vercel.app";
-    const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+    const frontendUrl = resolveFrontendUrl();
 
     if (kidError) {
       return res.redirect(
@@ -636,10 +659,9 @@ router.get("/koompi/callback", async (req, res) => {
     );
   } catch (error) {
     console.error("KOOMPI GET CALLBACK ERROR:", error.response?.data || error);
-    const rawFrontendUrl =
-      process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+    const frontendUrl = resolveFrontendUrl();
     return res.redirect(
-      `${rawFrontendUrl.replace(/\/+$/, "")}/login?error=${encodeURIComponent(
+      `${frontendUrl}/login?error=${encodeURIComponent(
         error.message || "koompi_login_failed"
       )}`
     );
