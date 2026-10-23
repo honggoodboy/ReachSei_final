@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
 import crypto from "crypto";
+import axios from "axios";
 
 import { sendResetCodeEmail } from "../utils/email.js";
 import { verifyUser } from "../middleware/authMiddleware.js";
@@ -406,9 +407,10 @@ router.post("/google-login", async (req, res) => {
 router.get("/telegram/login", (req, res) => {
   const botToken = process.env.TELEGRAM_LOGIN_BOT_TOKEN || "";
   const botId = botToken.split(":")[0] || "8885168265";
-  const frontendUrl =
+  const rawFrontendUrl =
     process.env.FRONTEND_URL || "https://reachsei.vercel.app";
-  const returnTo = `${frontendUrl.replace(/\/+$/, "")}/auth/telegram/callback`;
+  const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+  const returnTo = `${frontendUrl}/auth/telegram/callback`;
 
   const redirectUrl = `https://oauth.telegram.org/auth?bot_id=${botId}&origin=${encodeURIComponent(
     frontendUrl
@@ -448,10 +450,32 @@ router.post("/telegram-login", async (req, res) => {
       });
     }
 
-    // Telegram Login Widget signature verification.
-    const dataCheckString = Object.keys(telegramData)
+    // Official Telegram Login signature verification.
+    // Only standard Telegram fields participate in the signature check:
+    // auth_date, first_name, id, last_name, photo_url, username
+    const validTelegramKeys = [
+      "auth_date",
+      "first_name",
+      "id",
+      "last_name",
+      "photo_url",
+      "username",
+    ];
+
+    const checkData = {};
+    for (const key of validTelegramKeys) {
+      if (
+        telegramData[key] !== undefined &&
+        telegramData[key] !== null &&
+        String(telegramData[key]).trim() !== ""
+      ) {
+        checkData[key] = String(telegramData[key]);
+      }
+    }
+
+    const dataCheckString = Object.keys(checkData)
       .sort()
-      .map((key) => `${key}=${telegramData[key]}`)
+      .map((key) => `${key}=${checkData[key]}`)
       .join("\n");
 
     const secretKey = crypto
@@ -481,14 +505,13 @@ router.post("/telegram-login", async (req, res) => {
     const telegramId = String(telegramData.id);
     const firstName = String(telegramData.first_name || "").trim();
     const lastName = String(telegramData.last_name || "").trim();
-    const name = [firstName, lastName].filter(Boolean).join(" ");
-    const photoUrl = telegramData.photo_url ? String(telegramData.photo_url).trim() : null;
-
-    if (!name) {
-      return res.status(400).json({
-        error: "Telegram profile name is missing",
-      });
-    }
+    const username = String(telegramData.username || "").trim();
+    const name =
+      [firstName, lastName].filter(Boolean).join(" ") ||
+      (username ? `@${username}` : "Telegram User");
+    const photoUrl = telegramData.photo_url
+      ? String(telegramData.photo_url).trim()
+      : null;
 
     // Find an account already linked to this Telegram ID.
     const existingResult = await pool.query(
@@ -503,7 +526,7 @@ router.post("/telegram-login", async (req, res) => {
     if (existingResult.rows.length > 0) {
       user = existingResult.rows[0];
 
-      // Update avatar if provided by Telegram
+      // Update avatar if provided by Telegram and changed
       if (photoUrl && (!user.avatar_url || user.avatar_url !== photoUrl)) {
         const updateResult = await pool.query(
           `UPDATE users
@@ -515,11 +538,11 @@ router.post("/telegram-login", async (req, res) => {
         user = updateResult.rows[0];
       }
     } else {
-      // Telegram may not provide an email address.
-      // Do not invent an email or automatically link accounts by name.
+      // Telegram does not provide an email address in standard login widget.
+      // Create a dedicated account for this verified Telegram user.
       const createdResult = await pool.query(
-        `INSERT INTO users (name, telegram_id, avatar_url)
-         VALUES ($1, $2, $3)
+        `INSERT INTO users (name, telegram_id, avatar_url, auth_provider)
+         VALUES ($1, $2, $3, 'telegram')
          RETURNING id, name, email, phone, avatar_url`,
         [name, telegramId, photoUrl]
       );
@@ -696,4 +719,250 @@ router.put("/:id/password", async (req, res) => {
   }
 });
 
-export default router;
+/* =====================================
+   KOOMPI (KID) AUTHENTICATION
+===================================== */
+
+// Helper to exchange KID code and find or create ReachSei user
+async function processKoompiAuthCode(code, clientRedirectUri) {
+  const clientId =
+    process.env.KOOMPI_CLIENT_ID ||
+    "pk_aef9e8b4-751b-4734-8aee-8acd4c039965";
+  const clientSecret = process.env.KOOMPI_CLIENT_SECRET || "";
+  const rawFrontendUrl =
+    process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+  const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+  const redirectUri =
+    clientRedirectUri ||
+    process.env.KOOMPI_REDIRECT_URI ||
+    `${frontendUrl}/auth/koompi/callback`;
+
+  // 1. Exchange authorization code for access token
+  const tokenParams = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+  });
+
+  const tokenRes = await axios.post(
+    "https://api.kid.koompi.org/oauth/token",
+    tokenParams.toString(),
+    {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
+      },
+    }
+  );
+
+  const { access_token } = tokenRes.data;
+  if (!access_token) {
+    throw new Error("No access token returned from KID");
+  }
+
+  // 2. Fetch user information from KID
+  const userinfoRes = await axios.get(
+    "https://api.kid.koompi.org/oauth/userinfo",
+    {
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+        Accept: "application/json",
+      },
+    }
+  );
+
+  const profile = userinfoRes.data;
+  const koompiId = String(profile.sub || profile.kid || "");
+  const telegramId = profile.telegram_id ? String(profile.telegram_id) : null;
+  const name =
+    [profile.name, profile.given_name, profile.family_name]
+      .filter(Boolean)[0] ||
+    profile.preferred_username ||
+    (telegramId ? "Telegram User" : "KID User");
+  const email = profile.email ? profile.email.toLowerCase().trim() : null;
+  const phone = profile.phone_number ? profile.phone_number.trim() : null;
+  const avatarUrl = profile.picture || null;
+
+  if (!koompiId && !telegramId && !email) {
+    throw new Error("KID profile did not return identifiable user data");
+  }
+
+  // 3. Find existing account by koompi_id, telegram_id, or email
+  let existingUser = null;
+  if (koompiId) {
+    const resK = await pool.query(
+      "SELECT id, name, email, phone, avatar_url, koompi_id, telegram_id FROM users WHERE koompi_id = $1",
+      [koompiId]
+    );
+    if (resK.rows.length > 0) existingUser = resK.rows[0];
+  }
+
+  if (!existingUser && telegramId) {
+    const resT = await pool.query(
+      "SELECT id, name, email, phone, avatar_url, koompi_id, telegram_id FROM users WHERE telegram_id = $1",
+      [telegramId]
+    );
+    if (resT.rows.length > 0) existingUser = resT.rows[0];
+  }
+
+  if (!existingUser && email) {
+    const resE = await pool.query(
+      "SELECT id, name, email, phone, avatar_url, koompi_id, telegram_id FROM users WHERE LOWER(email) = $1",
+      [email]
+    );
+    if (resE.rows.length > 0) existingUser = resE.rows[0];
+  }
+
+  let user;
+  if (existingUser) {
+    user = existingUser;
+    // Link missing identifiers
+    const updates = [];
+    const vals = [];
+    let idx = 1;
+
+    if (!user.koompi_id && koompiId) {
+      updates.push(`koompi_id = $${idx++}`);
+      vals.push(koompiId);
+    }
+    if (!user.telegram_id && telegramId) {
+      updates.push(`telegram_id = $${idx++}`);
+      vals.push(telegramId);
+    }
+    if (!user.avatar_url && avatarUrl) {
+      updates.push(`avatar_url = $${idx++}`);
+      vals.push(avatarUrl);
+    }
+
+    if (updates.length > 0) {
+      vals.push(user.id);
+      const updateRes = await pool.query(
+        `UPDATE users SET ${updates.join(
+          ", "
+        )} WHERE id = $${idx} RETURNING id, name, email, phone, avatar_url`,
+        vals
+      );
+      user = updateRes.rows[0];
+    }
+  } else {
+    // 4. Create new user with KOOMPI provider
+    const insertRes = await pool.query(
+      `INSERT INTO users (name, email, phone, koompi_id, telegram_id, avatar_url, auth_provider)
+       VALUES ($1, $2, $3, $4, $5, $6, 'koompi')
+       RETURNING id, name, email, phone, avatar_url`,
+      [name, email, phone, koompiId || null, telegramId || null, avatarUrl]
+    );
+    user = insertRes.rows[0];
+  }
+
+  // 5. Generate ReachSei customer JWT
+  const token = jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      phone: user.phone,
+      role: "customer",
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatar_url: user.avatar_url || null,
+    },
+  };
+}
+
+// GET /users/koompi/login - Redirect browser to KID authorization page
+router.get("/koompi/login", (req, res) => {
+  const clientId =
+    process.env.KOOMPI_CLIENT_ID ||
+    "pk_aef9e8b4-751b-4734-8aee-8acd4c039965";
+  const rawFrontendUrl =
+    process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+  const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+
+  const redirectUri =
+    process.env.KOOMPI_REDIRECT_URI || `${frontendUrl}/auth/koompi/callback`;
+  const state = crypto.randomBytes(16).toString("hex");
+
+  const authUrl = `https://api.kid.koompi.org/oauth/authorize?client_id=${encodeURIComponent(
+    clientId
+  )}&redirect_uri=${encodeURIComponent(
+    redirectUri
+  )}&response_type=code&scope=${encodeURIComponent(
+    "openid profile email phone profile.telegram"
+  )}&state=${encodeURIComponent(state)}`;
+
+  res.redirect(authUrl);
+});
+
+// POST /users/koompi/callback - Called by React KoompiCallback page
+router.post("/koompi/callback", async (req, res) => {
+  try {
+    const { code, redirectUri } = req.body;
+    if (!code) {
+      return res.status(400).json({ error: "Authorization code is required" });
+    }
+
+    const result = await processKoompiAuthCode(code, redirectUri);
+    return res.json({
+      message: "KOOMPI login successful",
+      ...result,
+    });
+  } catch (error) {
+    console.error("KOOMPI CALLBACK ERROR:", error.response?.data || error);
+    return res.status(500).json({
+      error:
+        error.response?.data?.error_description ||
+        error.message ||
+        "Failed to complete KOOMPI login",
+    });
+  }
+});
+
+// GET /users/koompi/callback - Fallback if KID directly redirects to backend
+router.get("/koompi/callback", async (req, res) => {
+  try {
+    const { code, error: kidError } = req.query;
+    const rawFrontendUrl =
+      process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+    const frontendUrl = rawFrontendUrl.replace(/\/+$/, "");
+
+    if (kidError) {
+      return res.redirect(
+        `${frontendUrl}/login?error=${encodeURIComponent(kidError)}`
+      );
+    }
+
+    if (!code) {
+      return res.redirect(`${frontendUrl}/login?error=missing_code`);
+    }
+
+    const { token, user } = await processKoompiAuthCode(code);
+    return res.redirect(
+      `${frontendUrl}/auth/koompi/callback?token=${encodeURIComponent(
+        token
+      )}&user=${encodeURIComponent(JSON.stringify(user))}`
+    );
+  } catch (error) {
+    console.error("KOOMPI GET CALLBACK ERROR:", error.response?.data || error);
+    const rawFrontendUrl =
+      process.env.FRONTEND_URL || "https://reachsei.vercel.app";
+    return res.redirect(
+      `${rawFrontendUrl.replace(/\/+$/, "")}/login?error=${encodeURIComponent(
+        error.message || "koompi_login_failed"
+      )}`
+    );
+  }
+});
+
+export default router;

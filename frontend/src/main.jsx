@@ -44,6 +44,7 @@ import ReceiptPage from "./pages/ReceiptPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import TelegramCallback from "./pages/TelegramCallback.jsx";
+import KoompiCallback from "./pages/KoompiCallback.jsx";
 import "./index.css";
 
 function ScrollToTop() {
@@ -66,6 +67,12 @@ function AuthHashHandler() {
       location.pathname !== "/auth/callback"
     ) {
       window.location.replace(`/auth/callback${window.location.hash}`);
+    } else if (
+      window.location.hash &&
+      window.location.hash.includes("tgAuthResult=") &&
+      location.pathname !== "/auth/telegram/callback"
+    ) {
+      window.location.replace(`/auth/telegram/callback${window.location.hash}`);
     }
   }, [location]);
 
@@ -161,6 +168,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               <Route
                 path="/auth/telegram/callback"
                 element={<TelegramCallback />}
+              />
+              <Route
+                path="/auth/koompi/callback"
+                element={<KoompiCallback />}
               />
 
               <Route

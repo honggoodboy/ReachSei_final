@@ -20,28 +20,40 @@ export default function TelegramCallback() {
           telegramData = Object.fromEntries(searchParams.entries());
         }
 
-        // 2. Try URL hash fragment (Telegram OAuth web returns #tgAuthResult=... or #id=...)
+        // Helper to parse Base64 URL encoded tgAuthResult JSON
+        const parseTgAuthResult = (rawString) => {
+          try {
+            const match = rawString.match(/tgAuthResult=([^&]+)/);
+            if (!match || !match[1]) return null;
+            let base64 = match[1].replace(/-/g, "+").replace(/_/g, "/");
+            while (base64.length % 4 !== 0) {
+              base64 += "=";
+            }
+            const binaryStr = atob(base64);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+            const jsonStr = new TextDecoder().decode(bytes);
+            return JSON.parse(jsonStr);
+          } catch (err) {
+            console.error("Failed to parse tgAuthResult base64:", err);
+            return null;
+          }
+        };
+
+        // 2. Check if tgAuthResult is in search params
+        if (!telegramData.id && window.location.search.includes("tgAuthResult=")) {
+          const parsed = parseTgAuthResult(window.location.search);
+          if (parsed) telegramData = parsed;
+        }
+
+        // 3. Try URL hash fragment (Telegram OAuth returns #tgAuthResult=... or #id=...)
         if (!telegramData.id && window.location.hash) {
           const rawHash = window.location.hash.replace(/^#/, "");
           if (rawHash.includes("tgAuthResult=")) {
-            try {
-              const match = rawHash.match(/tgAuthResult=([^&]+)/);
-              if (match && match[1]) {
-                const base64 = match[1].replace(/-/g, "+").replace(/_/g, "/");
-                const jsonStr = decodeURIComponent(
-                  atob(base64)
-                    .split("")
-                    .map(
-                      (c) =>
-                        "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
-                    )
-                    .join("")
-                );
-                telegramData = JSON.parse(jsonStr);
-              }
-            } catch (err) {
-              console.error("Failed to parse tgAuthResult base64:", err);
-            }
+            const parsed = parseTgAuthResult(rawHash);
+            if (parsed) telegramData = parsed;
           } else {
             const hashParams = new URLSearchParams(rawHash);
             if (hashParams.get("id") && hashParams.get("hash")) {
@@ -77,6 +89,18 @@ export default function TelegramCallback() {
         localStorage.setItem("userToken", token);
         localStorage.setItem("user", JSON.stringify(user));
         window.dispatchEvent(new Event("userUpdated"));
+
+        // If this callback loaded inside a popup window, close it cleanly
+        if (window.opener && !window.opener.closed) {
+          try {
+            window.opener.dispatchEvent(new Event("userUpdated"));
+            window.opener.focus();
+            window.close();
+            return;
+          } catch (e) {
+            console.log("Could not communicate with opener window", e);
+          }
+        }
 
         if (active) {
           setMessage("Login successful! Redirecting...");

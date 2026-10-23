@@ -243,6 +243,26 @@
   margin: 0 auto;
 }
 
+/* KOOMPI Button */
+
+.koompi-sign-in-btn {
+  background: #ffffff;
+  border-color: #dededb;
+  transition: all 0.2s ease;
+}
+
+.koompi-sign-in-btn:hover:not(:disabled) {
+  border-color: #1f4bf0;
+  background: #f5f7ff;
+  color: #1f4bf0;
+}
+
+.koompi-icon {
+  width: 22px;
+  height: 22px;
+}
+
+
 /* Terms */
 
 .auth-footer-terms {
