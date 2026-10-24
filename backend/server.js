@@ -49,7 +49,15 @@ app.use(
   paywayRoutes
 );
 app.use(
+  "/payway",
+  paywayRoutes
+);
+app.use(
   "/api/baray",
+  barayRoutes
+);
+app.use(
+  "/baray",
   barayRoutes
 );
 /* =========================
@@ -74,6 +82,10 @@ app.use(
 
 app.use(
   "/orders",
+  orderRoutes
+);
+app.use(
+  "/api/orders",
   orderRoutes
 );
 
