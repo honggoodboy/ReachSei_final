@@ -926,7 +926,7 @@ const paymentStatus =
          TELEGRAM NOTIFICATION
       ========================= */
 
-      if (paymentMethod !== "payway") {
+      if (paymentMethod !== "payway" && paymentMethod !== "baray") {
         const telegramProductsText =
           verifiedItems
             .map((item) => {

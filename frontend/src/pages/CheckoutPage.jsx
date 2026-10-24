@@ -48,7 +48,7 @@ export default function CheckoutPage() {
     phone: "",
     province: "",
     address: "",
-    paymentMethod: "bank",
+    paymentMethod: "baray",
     paymentReference: "",
   });
 
@@ -226,7 +226,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!paymentProof) {
+    if (formData.paymentMethod === "bank" && !paymentProof) {
       setMessage("Please upload your payment screenshot.");
       return;
     }
@@ -260,23 +260,17 @@ export default function CheckoutPage() {
         formData.address.trim()
       );
 
-      // QR / bank payment only
-      submitData.append("paymentMethod", "bank");
+      submitData.append("paymentMethod", formData.paymentMethod);
 
       submitData.append(
         "paymentReference",
-        formData.paymentReference.trim()
+        formData.paymentReference?.trim() || ""
       );
 
       submitData.append(
         "items",
         JSON.stringify(orderItems)
       );
-
-      /*
-        Send these values for frontend/backend compatibility.
-        Backend will recalculate them securely.
-      */
 
       submitData.append(
         "subtotal",
@@ -293,12 +287,14 @@ export default function CheckoutPage() {
         checkoutTotal.toFixed(2)
       );
 
-      submitData.append(
-        "paymentProof",
-        paymentProof
-      );
+      if (paymentProof) {
+        submitData.append(
+          "paymentProof",
+          paymentProof
+        );
+      }
 
-      await axios.post(
+      const orderRes = await axios.post(
         `${API_BASE_URL}/orders`,
         submitData,
         {
@@ -307,6 +303,26 @@ export default function CheckoutPage() {
           },
         }
       );
+
+      const createdOrder = orderRes.data?.order;
+
+      if (formData.paymentMethod === "baray" && createdOrder?.id) {
+        setMessage("Preparing ABA / ACLEDA checkout...");
+        clearCart();
+
+        // Create Baray payment intent
+        const intentRes = await axios.post(
+          `${API_BASE_URL}/baray/create-intent`,
+          { orderId: createdOrder.id }
+        );
+
+        if (intentRes.data?.paymentUrl) {
+          window.location.href = intentRes.data.paymentUrl;
+          return;
+        } else {
+          throw new Error("Did not receive a payment redirect URL from Baray");
+        }
+      }
 
       setMessage("Order placed successfully!");
 
@@ -317,7 +333,7 @@ export default function CheckoutPage() {
         phone: "",
         province: "",
         address: "",
-        paymentMethod: "bank",
+        paymentMethod: "baray",
         paymentReference: "",
       });
 
@@ -538,166 +554,182 @@ export default function CheckoutPage() {
               />
             </div>
 
-            {/* PAYMENT */}
+            {/* PAYMENT METHOD SELECTION */}
 
             <div className="checkout-payment-method">
-
               <label>
-                Payment Method
+                Payment Method <span>*</span>
               </label>
 
-              <div className="qr-only-payment">
+              <div className="payment-options-grid">
+                {/* OPTION 1: BARAY (ABA / ACLEDA / KHQR) */}
+                <div
+                  className={`payment-option-card ${
+                    formData.paymentMethod === "baray" ? "active" : ""
+                  }`}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      paymentMethod: "baray",
+                    }))
+                  }
+                >
+                  <div className="payment-option-top">
+                    <span
+                      className={`radio-circle ${
+                        formData.paymentMethod === "baray" ? "active" : ""
+                      }`}
+                    >
+                      {formData.paymentMethod === "baray" ? "✓" : ""}
+                    </span>
 
-                <div className="payment-radio">
-
-                  <span className="radio-circle active">
-                    ✓
-                  </span>
-
-                  <div>
-                    <strong>
-                      QR Payment
-                    </strong>
-
-                    <small>
-                      ABA / KHQR
-                    </small>
+                    <div className="payment-option-info">
+                      <div className="payment-option-title-row">
+                        <strong>ABA / ACLEDA / KHQR</strong>
+                        <span className="instant-badge">Instant</span>
+                      </div>
+                      <small>Pay online via ABA Mobile, ACLEDA, or KHQR</small>
+                    </div>
                   </div>
 
+                  <div className="payment-bank-badges">
+                    <span className="bank-chip chip-aba">ABA Mobile</span>
+                    <span className="bank-chip chip-acleda">ACLEDA Mobile</span>
+                    <span className="bank-chip chip-khqr">KHQR</span>
+                  </div>
                 </div>
 
-              </div>
+                {/* OPTION 2: MANUAL BANK TRANSFER */}
+                <div
+                  className={`payment-option-card ${
+                    formData.paymentMethod === "bank" ? "active" : ""
+                  }`}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      paymentMethod: "bank",
+                    }))
+                  }
+                >
+                  <div className="payment-option-top">
+                    <span
+                      className={`radio-circle ${
+                        formData.paymentMethod === "bank" ? "active" : ""
+                      }`}
+                    >
+                      {formData.paymentMethod === "bank" ? "✓" : ""}
+                    </span>
 
+                    <div className="payment-option-info">
+                      <div className="payment-option-title-row">
+                        <strong>Manual QR Transfer</strong>
+                      </div>
+                      <small>Scan static QR and upload receipt screenshot</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* BANK / QR PAYMENT */}
-
-            <div className="bank-payment-box">
-
-              <h3>
-                QR Payment
-              </h3>
-
-              <p>
-                Scan the QR code below to pay
-                for your order.
-              </p>
-
-              <div className="bank-info">
-
-                <p>
-                  <strong>Bank:</strong>{" "}
-                  ABA / KHQR
-                </p>
-
-                <p>
-                  <strong>
-                    Account Name:
-                  </strong>{" "}
-                  QUEENM BY S.YAT
-                </p>
-
-                <p>
-                  <strong>
-                    Account Number:
-                  </strong>{" "}
-                  002 278 797
-                </p>
-
-                <p>
-                  <strong>
-                    Amount:
-                  </strong>{" "}
-                  ${checkoutTotal.toFixed(2)}
-                </p>
-
-              </div>
-
-              {/* QR */}
-
-              <div className="qr-payment-box">
-
-                <h4>
-                  Scan ABA KHQR
-                </h4>
-
-                <img
-                  src={qrImage}
-                  alt="ABA KHQR payment"
-                  className="aba-qr-image"
-                />
-
-                <div className="qr-actions">
-
-                  <a
-                    href={qrImage}
-                    download
-                    className="download-qr-btn"
-                  >
-                    Download QR
-                  </a>
-
+            {/* BARAY PAYMENT INFO BOX */}
+            {formData.paymentMethod === "baray" && (
+              <div className="baray-checkout-box">
+                <div className="baray-checkout-header">
+                  <div className="baray-icon">⚡</div>
+                  <div>
+                    <h3>Instant Bank Checkout</h3>
+                    <p>
+                      You will be securely redirected to <strong>Baray</strong> to complete your payment with <strong>ABA Bank</strong>, <strong>ACLEDA Bank</strong>, or any <strong>KHQR</strong> app.
+                    </p>
+                  </div>
                 </div>
 
-                <p className="qr-note">
-                  Screenshot or download this
-                  QR, pay with ABA/KHQR, then
-                  upload your payment screenshot
-                  below.
-                </p>
-
+                <div className="baray-perks-list">
+                  <div className="perk-item">✓ No screenshot upload needed</div>
+                  <div className="perk-item">✓ Instant automatic payment verification</div>
+                  <div className="perk-item">✓ Supports ABA Mobile, ACLEDA Mobile & Cards</div>
+                </div>
               </div>
+            )}
 
-              {/* REFERENCE */}
+            {/* MANUAL BANK / QR PAYMENT BOX */}
+            {formData.paymentMethod === "bank" && (
+              <div className="bank-payment-box">
+                <h3>QR Payment</h3>
+                <p>Scan the QR code below to pay for your order.</p>
 
-              <div className="checkout-field">
+                <div className="bank-info">
+                  <p>
+                    <strong>Bank:</strong> ABA / KHQR
+                  </p>
+                  <p>
+                    <strong>Account Name:</strong> QUEENM BY S.YAT
+                  </p>
+                  <p>
+                    <strong>Account Number:</strong> 002 278 797
+                  </p>
+                  <p>
+                    <strong>Amount:</strong> ${checkoutTotal.toFixed(2)}
+                  </p>
+                </div>
 
-                <label>
-                  Transaction Reference
+                {/* QR */}
+                <div className="qr-payment-box">
+                  <h4>Scan ABA KHQR</h4>
+                  <img
+                    src={qrImage}
+                    alt="ABA KHQR payment"
+                    className="aba-qr-image"
+                  />
+                  <div className="qr-actions">
+                    <a
+                      href={qrImage}
+                      download
+                      className="download-qr-btn"
+                    >
+                      Download QR
+                    </a>
+                  </div>
+                  <p className="qr-note">
+                    Screenshot or download this QR, pay with ABA/KHQR, then
+                    upload your payment screenshot below.
+                  </p>
+                </div>
 
-                  <small>
-                    (Optional)
-                  </small>
+                {/* REFERENCE */}
+                <div className="checkout-field">
+                  <label>
+                    Transaction Reference <small>(Optional)</small>
+                  </label>
+                  <input
+                    type="text"
+                    name="paymentReference"
+                    placeholder="Enter transaction reference"
+                    value={formData.paymentReference}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                {/* PAYMENT PROOF */}
+                <label className="payment-proof-label">
+                  <span>
+                    Upload Payment Screenshot <b>*</b>
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={handleProofChange}
+                    required={formData.paymentMethod === "bank"}
+                  />
                 </label>
 
-                <input
-                  type="text"
-                  name="paymentReference"
-                  placeholder="Enter transaction reference"
-                  value={
-                    formData.paymentReference
-                  }
-                  onChange={handleChange}
-                />
-
+                {paymentProof && (
+                  <p className="payment-proof-name">
+                    ✓ Selected: {paymentProof.name}
+                  </p>
+                )}
               </div>
-
-              {/* PAYMENT PROOF */}
-
-              <label className="payment-proof-label">
-
-                <span>
-                  Upload Payment Screenshot{" "}
-                  <b>*</b>
-                </span>
-
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                  onChange={handleProofChange}
-                  required
-                />
-
-              </label>
-
-              {paymentProof && (
-                <p className="payment-proof-name">
-                  ✓ Selected:{" "}
-                  {paymentProof.name}
-                </p>
-              )}
-
-            </div>
+            )}
 
             {/* DESKTOP / TABLET PLACE ORDER */}
 
@@ -707,7 +739,9 @@ export default function CheckoutPage() {
               className="checkout-submit-btn desktop-place-order"
             >
               {loading
-                ? "Placing Order..."
+                ? "Processing..."
+                : formData.paymentMethod === "baray"
+                ? "Pay with ABA / ACLEDA →"
                 : "Place Order"}
             </button>
 
@@ -836,20 +870,20 @@ export default function CheckoutPage() {
           {/* PAYMENT NOTE */}
 
           <div className="checkout-payment-note">
-
             <p>
               Payment:{" "}
               <strong>
-                QR Payment
+                {formData.paymentMethod === "baray"
+                  ? "ABA / ACLEDA / KHQR (Baray)"
+                  : "Manual QR Transfer"}
               </strong>
             </p>
 
             <small>
-              Your payment will be reviewed
-              by admin after you upload your
-              payment proof.
+              {formData.paymentMethod === "baray"
+                ? "You will be redirected to secure checkout to pay with ABA Mobile, ACLEDA Mobile, or KHQR."
+                : "Your payment will be reviewed by admin after you upload your payment proof."}
             </small>
-
           </div>
 
         </div>
@@ -865,7 +899,9 @@ export default function CheckoutPage() {
           className="checkout-submit-btn mobile-place-order"
         >
           {loading
-            ? "Placing Order..."
+            ? "Processing..."
+            : formData.paymentMethod === "baray"
+            ? "Pay with ABA / ACLEDA →"
             : "Place Order"}
         </button>
 

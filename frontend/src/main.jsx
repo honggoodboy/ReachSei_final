@@ -39,6 +39,7 @@ import ChangePassword from "./pages/ChangePassword";
 import NewsletterPage from "./pages/NewsletterPage";
 import ContactPage from "./pages/ContactPage";
 import ReceiptPage from "./pages/ReceiptPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import KoompiCallback from "./pages/KoompiCallback.jsx";
@@ -158,6 +159,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                 element={
                   <ShopLayout>
                     <ReceiptPage />
+                  </ShopLayout>
+                }
+              />
+
+              <Route
+                path="/payment/success"
+                element={
+                  <ShopLayout>
+                    <PaymentSuccess />
                   </ShopLayout>
                 }
               />

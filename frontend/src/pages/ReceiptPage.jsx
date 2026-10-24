@@ -442,7 +442,11 @@ export default function ReceiptPage() {
 
             <strong>
               {paymentMethod === "bank"
-                ? "ABA / KHQR"
+                ? "Manual ABA / KHQR"
+                : paymentMethod === "baray"
+                ? "ABA / ACLEDA (Baray)"
+                : paymentMethod === "payway"
+                ? "ABA PayWay"
                 : paymentMethod}
             </strong>
 

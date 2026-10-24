@@ -173,8 +173,12 @@ export default function MyOrders() {
                     <p>
                       <strong>Payment Method:</strong>{" "}
                       {paymentMethod === "bank"
-                        ? "Bank Transfer"
-                        : "Cash on Delivery"}
+                        ? "Manual Bank Transfer"
+                        : paymentMethod === "baray"
+                        ? "ABA / ACLEDA (Baray)"
+                        : paymentMethod === "payway"
+                        ? "ABA PayWay"
+                        : paymentMethod}
                     </p>
 
                     <p>
