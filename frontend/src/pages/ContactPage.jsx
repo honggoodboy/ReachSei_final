@@ -69,16 +69,16 @@ export default function ContactPage() {
 
           <div className="contact-list">
             <p>
-              <strong>📍 Address:</strong> Orkide Badminton
+              <strong><img src="https://img.icons8.com/?size=100&id=3723&format=png&color=000000" alt="Address" className="contact-icon" /> Address:</strong> Orkide Badminton
             </p>
             <p>
-              <strong>📞 Phone:</strong> +855 96 684 8484
+              <strong><img src="https://img.icons8.com/?size=100&id=9660&format=png&color=000000" alt="Phone" className="contact-icon" /> Phone:</strong> +855 96 684 8484
             </p>
             <p>
-              <strong>⏰ Hours:</strong> 8:00 AM – 10:00 PM
+              <strong><img src="https://img.icons8.com/?size=100&id=AOY94AyMQPT2&format=png&color=000000" alt="Hours" className="contact-icon" /> Hours:</strong> 8:00 AM – 10:00 PM
             </p>
             <p>
-              <strong>🌐 Social:</strong> Facebook / TikTok / Telegram
+              <strong><img src="https://img.icons8.com/?size=100&id=undefined&format=png&color=000000" alt="Social" className="contact-icon" /> Social:</strong> Facebook / TikTok / Telegram
             </p>
           </div>
         </div>

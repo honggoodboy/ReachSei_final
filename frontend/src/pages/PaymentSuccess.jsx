@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import html2canvas from "html2canvas";
 import "./PaymentSuccess.css";
 
 export default function PaymentSuccess() {
@@ -12,9 +13,11 @@ export default function PaymentSuccess() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [pollCount, setPollCount] = useState(0);
+  const [downloading, setDownloading] = useState(false);
 
-  const API_BASE_URL =
-    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+  const rawApiUrl = (
+    import.meta.env.VITE_API_URL || "http://localhost:5000"
+  ).replace(/\/+$/, "");
 
   const fetchStatus = async () => {
     if (!orderId) {
@@ -25,13 +28,16 @@ export default function PaymentSuccess() {
 
     try {
       const res = await axios.get(
-        `${API_BASE_URL}/baray/status/${encodeURIComponent(orderId)}`
+        `${rawApiUrl}/baray/status/${encodeURIComponent(orderId)}`
       );
 
       const fetchedOrder = res.data?.order;
       setOrder(fetchedOrder);
 
-      // If still pending review or unpaid and we haven't polled 5 times, poll again
+      // Always clear loading after the first successful fetch so the receipt shows immediately
+      setLoading(false);
+
+      // Continue polling silently in background if still unpaid (up to 5 times)
       if (
         fetchedOrder &&
         fetchedOrder.payment_status !== "paid" &&
@@ -39,9 +45,7 @@ export default function PaymentSuccess() {
       ) {
         setTimeout(() => {
           setPollCount((prev) => prev + 1);
-        }, 2000);
-      } else {
-        setLoading(false);
+        }, 3000);
       }
     } catch (err) {
       console.error("Fetch order status error:", err);
@@ -56,6 +60,74 @@ export default function PaymentSuccess() {
   useEffect(() => {
     fetchStatus();
   }, [orderId, pollCount]);
+
+  /* =========================================================
+     DOWNLOAD RECEIPT (PNG)
+  ========================================================= */
+  const downloadReceipt = async () => {
+    const receiptBox = document.getElementById("payment-receipt-box");
+    if (!receiptBox) {
+      console.error("Receipt element not found.");
+      return;
+    }
+
+    try {
+      setDownloading(true);
+      const canvas = await html2canvas(receiptBox, {
+        scale: 2,
+        backgroundColor: "#faf9f6",
+        useCORS: true,
+        logging: false,
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          console.error("Could not create receipt image.");
+          setDownloading(false);
+          return;
+        }
+
+        const fileName = `Reachsei_Receipt_${order.order_code || order.id}.png`;
+        const file = new File([blob], fileName, { type: "image/png" });
+
+        // Mobile share/save sheet if supported
+        if (
+          navigator.share &&
+          navigator.canShare &&
+          navigator.canShare({ files: [file] })
+        ) {
+          try {
+            await navigator.share({
+              title: "Reachsei Order Receipt",
+              text: `Receipt for Order #${order.order_code || order.id}`,
+              files: [file],
+            });
+            setDownloading(false);
+            return;
+          } catch (e) {
+            if (e.name === "AbortError") {
+              setDownloading(false);
+              return;
+            }
+          }
+        }
+
+        // Desktop direct download
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        setDownloading(false);
+      }, "image/png");
+    } catch (err) {
+      console.error("Failed to download receipt:", err);
+      setDownloading(false);
+    }
+  };
 
   if (loading && !order) {
     return (
@@ -141,7 +213,16 @@ export default function PaymentSuccess() {
         </div>
 
         {/* Receipt Details Box */}
-        <div className="receipt-box">
+        <div className="receipt-box" id="payment-receipt-box">
+          <div className="receipt-header-row">
+            <h3 className="receipt-store-title">REACHSEI STORE</h3>
+            <span className="receipt-tag">Official Receipt</span>
+          </div>
+
+          <div className="receipt-row">
+            <span>Order Code:</span>
+            <strong>#{order.order_code || order.id}</strong>
+          </div>
           <div className="receipt-row">
             <span>Customer Name:</span>
             <strong>{order.full_name || "Valued Customer"}</strong>
@@ -203,6 +284,21 @@ export default function PaymentSuccess() {
 
         {/* Buttons */}
         <div className="action-buttons">
+          <button
+            onClick={downloadReceipt}
+            disabled={downloading}
+            className="btn btn-download"
+          >
+            {downloading ? "Generating PNG..." : "📥 Download Receipt (PNG)"}
+          </button>
+
+          <button
+            onClick={() => navigate(`/receipt?orderId=${order.id}`, { state: { order } })}
+            className="btn btn-receipt"
+          >
+            🧾 View Full Receipt
+          </button>
+
           <Link to="/my-orders" className="btn btn-primary">
             View My Orders
           </Link>

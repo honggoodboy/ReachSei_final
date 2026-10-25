@@ -1,12 +1,53 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import html2canvas from "html2canvas";
 import "./ReceiptPage.css";
 
 export default function ReceiptPage() {
   const { state } = useLocation();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
-  const order = state?.order;
+  const [order, setOrder] = useState(state?.order || null);
+  const [loading, setLoading] = useState(!state?.order);
+
+  useEffect(() => {
+    if (!order) {
+      const orderId = searchParams.get("orderId");
+      if (orderId) {
+        const rawApiUrl = (
+          import.meta.env.VITE_API_URL || "http://localhost:5000"
+        ).replace(/\/+$/, "");
+
+        axios
+          .get(`${rawApiUrl}/baray/status/${encodeURIComponent(orderId)}`)
+          .then((res) => {
+            if (res.data?.order) {
+              setOrder(res.data.order);
+            }
+          })
+          .catch((err) => {
+            console.error("Receipt fetch error:", err);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [order, searchParams]);
+
+  if (loading) {
+    return (
+      <section className="receipt-page">
+        <div className="receipt-empty">
+          <p>Loading your receipt...</p>
+        </div>
+      </section>
+    );
+  }
 
   if (!order) {
     return (
