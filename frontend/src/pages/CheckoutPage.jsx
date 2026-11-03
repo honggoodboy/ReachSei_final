@@ -39,7 +39,12 @@ export default function CheckoutPage() {
   const { cartItems, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  const rawApiUrl = import.meta.env.VITE_API_URL || "";
+  const API_BASE_URL =
+    window.location.hostname !== "localhost" &&
+    (!rawApiUrl || rawApiUrl.includes("localhost"))
+      ? "https://reachsei-final.onrender.com"
+      : rawApiUrl || "http://localhost:5000";
 
   const provinceRef = useRef(null);
 

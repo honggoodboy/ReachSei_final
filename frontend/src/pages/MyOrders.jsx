@@ -4,7 +4,12 @@ import axios from "axios";
 import "./MyOrders.css";
 
 export default function MyOrders() {
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  const rawApiUrl = import.meta.env.VITE_API_URL || "";
+  const API_BASE_URL =
+    window.location.hostname !== "localhost" &&
+    (!rawApiUrl || rawApiUrl.includes("localhost"))
+      ? "https://reachsei-final.onrender.com"
+      : rawApiUrl || "http://localhost:5000";
   const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
@@ -50,7 +55,14 @@ export default function MyOrders() {
       setOrders(res.data);
     } catch (error) {
       console.error("Fetch my orders error:", error);
-      alert("Failed to load your orders.");
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("user");
+        alert("Your login session has expired. Please log in again.");
+        navigate("/login");
+      } else {
+        alert("Failed to load your orders. " + (error.response?.data?.error || ""));
+      }
     } finally {
       setLoading(false);
     }
