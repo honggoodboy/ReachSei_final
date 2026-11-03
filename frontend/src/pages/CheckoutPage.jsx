@@ -298,7 +298,7 @@ export default function CheckoutPage() {
         paymentProof
       );
 
-      await axios.post(
+      const response = await axios.post(
         `${API_BASE_URL}/orders`,
         submitData,
         {
@@ -307,6 +307,22 @@ export default function CheckoutPage() {
           },
         }
       );
+
+      const createdOrder = response.data?.order || {};
+      const receiptOrder = {
+        ...createdOrder,
+        full_name: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        province: formData.province.trim(),
+        address: formData.address.trim(),
+        payment_method: "bank",
+        payment_reference: formData.paymentReference.trim(),
+        payment_status: createdOrder.payment_status || "pending_review",
+        delivery_fee: Number(createdOrder.delivery_fee ?? deliveryFee),
+        total: Number(createdOrder.total ?? checkoutTotal),
+        subtotal: Number(createdOrder.subtotal ?? cartTotal),
+        items: orderItems,
+      };
 
       setMessage("Order placed successfully!");
 
@@ -326,12 +342,10 @@ export default function CheckoutPage() {
       setPaymentProof(null);
 
       setTimeout(() => {
-        if (user) {
-          navigate("/my-orders");
-        } else {
-          navigate("/");
-        }
-      }, 1500);
+        navigate("/receipt", {
+          state: { order: receiptOrder },
+        });
+      }, 700);
     } catch (error) {
       console.error("Checkout error:", error);
 

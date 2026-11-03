@@ -233,6 +233,16 @@ export default function ReceiptPage() {
           ← Back to Home
         </button>
 
+        {localStorage.getItem("user") && (
+          <button
+            className="receipt-back-btn"
+            style={{ background: "#444" }}
+            onClick={() => navigate("/my-orders")}
+          >
+            📋 My Orders
+          </button>
+        )}
+
         <button
           className="receipt-download-btn"
           onClick={downloadReceipt}
