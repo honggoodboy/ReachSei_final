@@ -291,6 +291,147 @@ router.post("/reset-password", async (req, res) => {
 
 
 
+
+/* =========================
+   CUSTOMER GOOGLE LOGIN
+   Verify Supabase token, then issue ReachSei JWT
+========================= */
+router.post("/google-login", async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const accessToken = authHeader?.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : null;
+
+    if (!accessToken) {
+      return res.status(401).json({
+        error: "Google access token is required",
+      });
+    }
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing backend Supabase configuration");
+
+      return res.status(500).json({
+        error: "Google login is not configured on the server",
+      });
+    }
+
+    // Verify the access token directly with Supabase.
+    const supabaseResponse = await fetch(
+      `${supabaseUrl.replace(/\/+$/, "")}/auth/v1/user`,
+      {
+        headers: {
+          apikey: supabaseAnonKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!supabaseResponse.ok) {
+      return res.status(401).json({
+        error: "Invalid or expired Google session",
+      });
+    }
+
+    const googleUser = await supabaseResponse.json();
+
+    const email = googleUser.email?.trim().toLowerCase();
+    const name =
+      googleUser.user_metadata?.full_name ||
+      googleUser.user_metadata?.name ||
+      email?.split("@")[0];
+    const avatarUrl =
+      googleUser.user_metadata?.avatar_url ||
+      googleUser.user_metadata?.picture ||
+      null;
+
+    if (!email || !name) {
+      return res.status(400).json({
+        error: "Google account is missing required profile information",
+      });
+    }
+
+    // Find an existing ReachSei account by email.
+    const existingResult = await pool.query(
+      `
+      SELECT id, name, email, phone, avatar_url
+      FROM users
+      WHERE LOWER(email) = $1
+      `,
+      [email]
+    );
+
+    let user;
+
+    if (existingResult.rows.length > 0) {
+      // Keep the existing ReachSei account and its database ID.
+      user = existingResult.rows[0];
+
+      // Update avatar if provided by Google
+      if (avatarUrl && (!user.avatar_url || user.avatar_url !== avatarUrl)) {
+        const updateResult = await pool.query(
+          `
+          UPDATE users
+          SET avatar_url = $1
+          WHERE id = $2
+          RETURNING id, name, email, phone, avatar_url
+          `,
+          [avatarUrl, user.id]
+        );
+        user = updateResult.rows[0];
+      }
+    } else {
+      // Google users can initially have no phone or password.
+      const createdResult = await pool.query(
+        `
+        INSERT INTO users (name, email, avatar_url, auth_provider)
+        VALUES ($1, $2, $3, 'google')
+        RETURNING id, name, email, phone, avatar_url
+        `,
+        [name, email, avatarUrl]
+      );
+
+      user = createdResult.rows[0];
+    }
+
+    // Issue the same type of backend JWT used by password login.
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        role: "customer",
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    return res.json({
+      message: "Google login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        avatar_url: user.avatar_url || null,
+      },
+    });
+  } catch (error) {
+    console.error("GOOGLE LOGIN ERROR:", error);
+
+    return res.status(500).json({
+      error: "Unable to complete Google login",
+    });
+  }
+});
+
 /* =========================
    UPDATE CUSTOMER PROFILE
    PUT /users/:id

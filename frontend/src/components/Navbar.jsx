@@ -211,16 +211,18 @@ export default function Navbar() {
                   </div>
                 </li>
 
-                <li>
+
+                {/* My Order for desktop */}
+                <li className="desktop-only">
                   <Link
-                    to="/newsletter"
+                    to="/my-orders"
                     className={
-                      location.pathname.startsWith("/newsletter")
+                      location.pathname.startsWith("/my-orders")
                         ? "active"
                         : ""
                     }
                   >
-                    Newsletter
+                    My Order
                   </Link>
                 </li>
 

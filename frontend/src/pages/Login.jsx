@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase.js";
 import logo from "../img/logo_reachsei.png";
 import "./Auth.css";
 
 export default function Login() {
   const navigate = useNavigate();
   const [message, setMessage] = useState("");
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [koompiLoading, setKoompiLoading] = useState(false);
 
   // Redirect users who already have a saved login
@@ -17,6 +19,30 @@ export default function Login() {
       navigate("/", { replace: true });
     }
   }, [navigate]);
+
+  // Google OAuth through Supabase
+  const handleGoogleLogin = async () => {
+    try {
+      setGoogleLoading(true);
+      setMessage("");
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        setMessage(error.message);
+        setGoogleLoading(false);
+      }
+    } catch (error) {
+      console.error("Google login error:", error);
+      setMessage("Unable to start Google login. Please try again.");
+      setGoogleLoading(false);
+    }
+  };
 
   // KOOMPI (KID) Login
   const handleKoompiLogin = () => {
@@ -59,7 +85,7 @@ export default function Login() {
             <h1 className="auth-title">Welcome to ReachSei</h1>
 
             <p className="auth-subtitle">
-              Sign in with your KOOMPI ID to continue shopping.
+              Sign in to your account to continue shopping.
             </p>
           </div>
 
@@ -71,8 +97,33 @@ export default function Login() {
             </div>
           )}
 
-          {/* KOOMPI ID login */}
+          {/* Sign-in options */}
           <div className="auth-actions">
+            <button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              className="social-sign-in-btn"
+            >
+              <span className="social-btn-inner">
+                <img
+                  src="https://img.icons8.com/?size=100&id=17949&format=png&color=000000"
+                  alt="Google"
+                  className="social-login-icon"
+                />
+
+                <span>
+                  {googleLoading
+                    ? "Connecting to Google..."
+                    : "Continue with Google"}
+                </span>
+              </span>
+            </button>
+
+            <div className="auth-divider-line">
+              <span>or</span>
+            </div>
+
             <button
               id="koompi-login-btn"
               type="button"
