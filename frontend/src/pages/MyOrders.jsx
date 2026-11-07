@@ -303,7 +303,7 @@ export default function MyOrders() {
                       <div className="order-actions">
                         <button
                           type="button"
-                          className="btn btn-receipt"
+                          className="order-action-btn order-action-receipt"
                           onClick={() => {
                             sessionStorage.setItem("reachsei_last_receipt", JSON.stringify(order));
                             navigate("/receipt", { state: { order } });
@@ -312,11 +312,11 @@ export default function MyOrders() {
                           Download receipt
                         </button>
                         {order.status === "pending" && (
-                          <button type="button" className="btn btn-cancel" onClick={() => cancelOrder(order.id)}>
+                        <button type="button" className="order-action-btn order-action-cancel" onClick={() => cancelOrder(order.id)}>
                             Cancel order
                           </button>
                         )}
-                        <Link to="/contact" className="btn btn-support">Contact support</Link>
+                        <Link to="/contact" className="order-action-btn order-action-support">Contact support</Link>
                       </div>
                     </div>
                   )}

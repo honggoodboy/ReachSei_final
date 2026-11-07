@@ -157,7 +157,7 @@
 
 .order-header:focus-visible,
 .order-filter:focus-visible,
-.btn:focus-visible,
+.order-action-btn:focus-visible,
 .shop-btn:focus-visible,
 .clear-filter-btn:focus-visible {
   outline: 3px solid rgba(255, 208, 0, 0.55);
@@ -526,7 +526,7 @@
   margin-top: 19px;
 }
 
-.btn,
+.order-action-btn,
 .shop-btn,
 .clear-filter-btn {
   min-height: 48px;
@@ -534,7 +534,6 @@
   align-items: center;
   justify-content: center;
   padding: 0 16px;
-  border: 0;
   border-radius: 16px;
   font: inherit;
   font-size: 15px;
@@ -544,22 +543,23 @@
   transition: background 150ms ease, transform 150ms ease, box-shadow 150ms ease;
 }
 
-.btn:hover,
+.order-action-btn:hover,
 .shop-btn:hover,
 .clear-filter-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 10px rgba(17, 24, 39, 0.13);
 }
 
-.btn-receipt,
+.order-action-receipt,
 .shop-btn {
-  background: linear-gradient(135deg, var(--sun), #ffdd33);
+  border: 1px solid #d6a900;
+  background: var(--sun);
   color: var(--ink);
 }
 
-.btn-receipt:hover,
+.order-action-receipt:hover,
 .shop-btn:hover {
-  background: linear-gradient(135deg, var(--sun), #ffdd33);
+  background: #ffda24;
   box-shadow: 0 14px 30px rgba(255, 204, 0, 0.4);
 }
 
@@ -569,23 +569,25 @@
   color: var(--ink);
 }
 
-.btn-cancel {
+.order-action-cancel {
+  border: 1px solid #b91c1c;
   background: #dc2626;
   color: var(--white);
 }
 
-.btn-cancel:hover {
+.order-action-cancel:hover {
   background: #b91c1c;
 }
 
-.btn-support {
-  border: 1px solid var(--dust);
-  background: var(--white);
+.order-action-support {
+  border: 1px solid var(--ink2);
+  background: var(--paper);
   color: var(--ink);
 }
 
-.btn-support:hover {
-  background: var(--paper);
+.order-action-support:hover {
+  border-color: var(--ink);
+  background: #e9edf2;
 }
 
 .orders-empty {
@@ -858,14 +860,14 @@
     margin-top: 15px;
   }
 
-  .btn {
+  .order-action-btn {
     min-width: 0;
     min-height: 48px;
     padding: 14px 12px;
     font-size: 14px;
   }
 
-  .btn-receipt {
+  .order-action-receipt {
     grid-column: 1 / -1;
   }
 
@@ -951,7 +953,7 @@
 @media (prefers-reduced-motion: reduce) {
   .order-filter,
   .chevron,
-  .btn,
+  .order-action-btn,
   .shop-btn,
   .clear-filter-btn {
     transition: none;
