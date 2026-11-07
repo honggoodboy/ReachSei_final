@@ -666,15 +666,15 @@ export default function AdminOrders() {
                         Pending
                       </option>
 
-                      <option value="confirmed">
+                      <option value="confirmed" disabled={paymentStatus !== "paid"}>
                         Confirmed
                       </option>
 
-                      <option value="shipped">
+                      <option value="shipped" disabled={paymentStatus !== "paid"}>
                         Shipped
                       </option>
 
-                      <option value="delivered">
+                      <option value="delivered" disabled={paymentStatus !== "paid"}>
                         Delivered
                       </option>
 

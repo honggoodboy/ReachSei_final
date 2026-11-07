@@ -7,6 +7,7 @@ import { paymentProofStorage } from "../utils/cloudinary.js";
 import {
   verifyAdmin,
   verifyUser,
+  optionalUser,
 } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -364,6 +365,7 @@ router.get(
 
 router.post(
   "/",
+  optionalUser,
   upload.single(
     "paymentProof"
   ),
@@ -389,6 +391,7 @@ router.post(
         deliveryMethod,
 
       } = req.body;
+      userId = req.user?.id || null;
 
       /* =========================
          VALIDATION
@@ -421,7 +424,11 @@ router.post(
 
       }
 
-      if (!address?.trim()) {
+      if (
+        String(deliveryMethod || "").trim().toLowerCase() !== "pickup" &&
+        province.trim() !== "Pick Up" &&
+        !address?.trim()
+      ) {
 
         return res.status(400).json({
           error:
@@ -442,12 +449,10 @@ router.post(
     .toLowerCase();
 
 if (
-  paymentMethod !== "bank" &&
-  paymentMethod !== "payway" &&
-  paymentMethod !== "baray"
+  paymentMethod !== "bank"
 ) {
   return res.status(400).json({
-    error: "Invalid payment method",
+    error: "Only manual QR payments with uploaded proof are currently available",
   });
 }
 
@@ -571,10 +576,13 @@ if (
           item.id ||
           item.product_id;
 
-        const quantity =
-          Number(
-            item.quantity
-          ) || 1;
+        const quantity = Number(item.quantity);
+
+        if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 99) {
+          return res.status(400).json({
+            error: "Each quantity must be a whole number from 1 to 99",
+          });
+        }
 
         if (!productId) {
 
@@ -591,7 +599,9 @@ if (
             SELECT
               id,
               name,
-              price
+              price,
+              sizes,
+              stock_status
 
             FROM products
 
@@ -615,6 +625,24 @@ if (
         const dbProduct =
           productRes.rows[0];
 
+        if (String(dbProduct.stock_status || "instock").toLowerCase() !== "instock") {
+          return res.status(400).json({
+            error: `${dbProduct.name} is not currently available`,
+          });
+        }
+
+        const validSizes = String(dbProduct.sizes || "")
+          .split(/[,\n]/)
+          .map((size) => size.trim().toLowerCase())
+          .filter(Boolean);
+        const requestedSize = String(item.size || item.selectedSize || "").trim();
+
+        if (validSizes.length && (!requestedSize || !validSizes.includes(requestedSize.toLowerCase()))) {
+          return res.status(400).json({
+            error: `Choose a valid size for ${dbProduct.name}`,
+          });
+        }
+
         const dbPrice =
           Number(
             dbProduct.price
@@ -636,10 +664,7 @@ if (
           quantity:
             quantity,
 
-          size:
-            item.size ||
-            item.selectedSize ||
-            "",
+          size: requestedSize,
         });
 
       }
@@ -681,10 +706,7 @@ if (
     ? req.file.path
     : null;
 
-const paymentStatus =
-  ["payway", "baray"].includes(paymentMethod)
-    ? "unpaid"
-    : "pending_review";
+const paymentStatus = "pending_review";
 
       const {
         dailyOrderNumber,
@@ -1184,6 +1206,7 @@ router.put(
           SET status = $1
 
           WHERE id = $2
+            AND ($1 IN ('pending', 'cancelled') OR payment_status = 'paid')
 
           RETURNING *
           `,
@@ -1198,9 +1221,9 @@ router.put(
         0
       ) {
 
-        return res.status(404).json({
+        return res.status(409).json({
           error:
-            "Order not found",
+            "Order was not found or cannot be fulfilled before payment is approved",
         });
 
       }
@@ -1251,12 +1274,7 @@ router.put(
         paymentStatus,
       } = req.body;
 
-      const allowedPaymentStatus = [
-        "unpaid",
-        "pending_review",
-        "paid",
-        "rejected",
-      ];
+      const allowedPaymentStatus = ["pending_review", "paid", "rejected"];
 
       if (
         !allowedPaymentStatus.includes(
@@ -1279,6 +1297,10 @@ router.put(
           SET payment_status = $1
 
           WHERE id = $2
+            AND (
+              (payment_status = 'pending_review' AND payment_proof IS NOT NULL)
+              OR ($1 = 'pending_review' AND payment_status <> 'paid')
+            )
 
           RETURNING *
           `,
@@ -1293,9 +1315,9 @@ router.put(
         0
       ) {
 
-        return res.status(404).json({
+        return res.status(409).json({
           error:
-            "Order not found",
+            "Order not found or payment has already been reviewed",
         });
 
       }
@@ -1427,10 +1449,11 @@ router.put(
 
           WHERE id = $1
             AND status = 'pending'
+            AND user_id = $2
 
           RETURNING *
           `,
-          [id]
+          [id, req.user.id]
         );
 
       if (
@@ -1471,7 +1494,7 @@ router.put(
 
   }
 );
-router.get("/:id/payment-status", async (req, res) => {
+router.get("/:id/payment-status", verifyAdmin, async (req, res) => {
   try {
     const { id } = req.params;
 

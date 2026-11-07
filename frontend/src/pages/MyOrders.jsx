@@ -1,92 +1,88 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import "./MyOrders.css";
 
+const stepLabels = ["pending", "confirmed", "shipped", "delivered"];
+const filters = [
+  { value: "all", label: "All orders" },
+  { value: "pending", label: "Pending" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "shipped", label: "Shipped" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
+function formatStatus(status) {
+  if (!status) return "Unknown";
+  return status.replaceAll("_", " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatDate(value) {
+  if (!value) return "Date unavailable";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Date unavailable"
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
 export default function MyOrders() {
   const rawApiUrl = import.meta.env.VITE_API_URL || "";
   const API_BASE_URL =
-    window.location.hostname !== "localhost" &&
-    (!rawApiUrl || rawApiUrl.includes("localhost"))
+    window.location.hostname !== "localhost" && (!rawApiUrl || rawApiUrl.includes("localhost"))
       ? "https://reachsei-final.onrender.com"
       : rawApiUrl || "http://localhost:5000";
-  const navigate = useNavigate();
 
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState({});
+  const [activeFilter, setActiveFilter] = useState("all");
 
-  const orderSteps = ["pending", "confirmed", "shipped", "delivered"];
-
-  const getStepIndex = (status) => {
-    return orderSteps.indexOf(status);
-  };
-
-  const formatStatus = (status) => {
-    if (!status) return "Unknown";
-    return status.replace("_", " ");
-  };
-
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-
-    if (imagePath.startsWith("http")) {
-      return imagePath;
-    }
-
-    return `${API_BASE_URL}${imagePath}`;
-  };
-
-  const fetchOrders = async () => {
-    const user = JSON.parse(localStorage.getItem("user"));
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
     const token = localStorage.getItem("userToken");
-
     if (!user) {
       navigate("/login");
-      return;
+      return undefined;
     }
 
-    try {
-      setLoading(true);
-
-      const res = await axios.get(`${API_BASE_URL}/orders/user/${user.id}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+    let active = true;
+    axios.get(API_BASE_URL + "/orders/user/" + user.id, {
+      headers: token ? { Authorization: "Bearer " + token } : {},
+    })
+      .then(({ data }) => {
+        if (active) setOrders(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        console.error("Fetch my orders error:", error);
+        if (error.response?.status === 401) {
+          localStorage.removeItem("userToken");
+          localStorage.removeItem("user");
+          alert("Session expired – please log in again.");
+          navigate("/login");
+        } else {
+          alert("Unable to load orders.");
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
-      setOrders(res.data);
-    } catch (error) {
-      console.error("Fetch my orders error:", error);
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        localStorage.removeItem("userToken");
-        localStorage.removeItem("user");
-        alert("Your login session has expired. Please log in again.");
-        navigate("/login");
-      } else {
-        alert("Failed to load your orders. " + (error.response?.data?.error || ""));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      active = false;
+    };
+  }, [API_BASE_URL, navigate]);
 
   const cancelOrder = async (id) => {
-    const confirmCancel = window.confirm(
-      "Are you sure you want to cancel this order?"
-    );
-
-    if (!confirmCancel) return;
-
+    if (!window.confirm("Cancel this order?")) return;
+    const token = localStorage.getItem("userToken");
     try {
-      const token = localStorage.getItem("userToken");
-      await axios.put(
-        `${API_BASE_URL}/orders/${id}/cancel`,
-        {},
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-
-      setOrders((prev) =>
-        prev.map((order) =>
+      await axios.put(API_BASE_URL + "/orders/" + id + "/cancel", {}, {
+        headers: token ? { Authorization: "Bearer " + token } : {},
+      });
+      setOrders((current) =>
+        current.map((order) =>
           order.id === id ? { ...order, status: "cancelled" } : order
         )
       );
@@ -96,225 +92,241 @@ export default function MyOrders() {
     }
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [API_BASE_URL, navigate]);
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return "";
+    return imagePath.startsWith("http") ? imagePath : API_BASE_URL + imagePath;
+  };
+
+  const getStepIndex = (status) => {
+    const normalized = status === "processing" ? "confirmed" : status;
+    return stepLabels.indexOf(normalized);
+  };
+
+  const filterCounts = useMemo(() => filters.reduce((counts, filter) => {
+    counts[filter.value] = filter.value === "all"
+      ? orders.length
+      : orders.filter((order) => filter.value === "confirmed"
+        ? ["confirmed", "processing"].includes(order.status)
+        : order.status === filter.value).length;
+    return counts;
+  }, {}), [orders]);
+
+  const visibleOrders = useMemo(
+    () => activeFilter === "all"
+      ? orders
+      : orders.filter((order) => activeFilter === "confirmed"
+        ? ["confirmed", "processing"].includes(order.status)
+        : order.status === activeFilter),
+    [activeFilter, orders]
+  );
 
   if (loading) {
     return (
-      <section className="my-orders-page">
+      <main className="my-orders-page">
         <div className="my-orders-container">
-          <p>Loading your orders...</p>
+          <div className="orders-loading" role="status">Loading your orders…</div>
         </div>
-      </section>
+      </main>
     );
   }
 
   return (
-    <section className="my-orders-page">
+    <main className="my-orders-page">
       <div className="my-orders-container">
-        <div className="my-orders-head">
+        <header className="my-orders-header">
           <div>
+            <p className="orders-eyebrow">ACCOUNT / ORDER HISTORY</p>
             <h1>My Orders</h1>
-            <p>Track your order history, payment, and delivery status.</p>
+            <p className="orders-intro">Follow your ReachSei purchases from payment review through delivery.</p>
           </div>
-        </div>
+          <div className="orders-count" aria-label={orders.length + " total orders"}>
+            <strong>{orders.length}</strong>
+            <span>{orders.length === 1 ? "order" : "orders"}</span>
+          </div>
+        </header>
+
+        {orders.length > 0 && (
+          <nav className="order-filters" aria-label="Filter orders">
+            {filters.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                className={"order-filter " + (activeFilter === filter.value ? "active" : "")}
+                aria-pressed={activeFilter === filter.value}
+                onClick={() => setActiveFilter(filter.value)}
+              >
+                {filter.label}
+                <span>{filterCounts[filter.value] || 0}</span>
+              </button>
+            ))}
+          </nav>
+        )}
 
         {orders.length === 0 ? (
-          <div className="no-orders">
-            <h2>No orders yet</h2>
-            <p>You have no orders yet.</p>
-
-            <Link to="/" className="shop-btn">
-              Shop Now
-            </Link>
-          </div>
+          <section className="orders-empty">
+            <span className="empty-mark" aria-hidden="true">RS</span>
+            <h2>Your next game starts here.</h2>
+            <p>You haven’t placed an order yet. Explore the collection and find your next court-ready essential.</p>
+            <Link to="/" className="shop-btn">Explore the collection</Link>
+          </section>
+        ) : visibleOrders.length === 0 ? (
+          <section className="orders-empty orders-empty-filtered">
+            <h2>No {activeFilter} orders</h2>
+            <p>Choose another status to see more of your order history.</p>
+            <button type="button" className="clear-filter-btn" onClick={() => setActiveFilter("all")}>
+              Show all orders
+            </button>
+          </section>
         ) : (
-          <div className="my-orders-list">
-            {orders.map((order) => {
-              const paymentMethod =
-                order.payment_method || order.paymentMethod || "cash";
-
+          <div className="orders-list">
+            {visibleOrders.map((order) => {
+              const isOpen = expanded[order.id] ?? false;
+              const stepIndex = getStepIndex(order.status);
+              const subtotal = Number(order.subtotal ?? 0);
+              const deliveryFee = Number(order.delivery_fee ?? 0);
+              const total = Number(order.total ?? subtotal + deliveryFee);
+              const paymentMethod = order.payment_method || order.paymentMethod || "bank";
               const paymentStatus = order.payment_status || "unpaid";
-
               const orderCode = order.order_code || order.orderCode || order.id;
+              const orderElementId = "order-details-" + order.id;
 
               return (
-                <div key={order.id} className="my-order-card">
-                  <div className="my-order-top">
-                    <div>
-                      <h3>Order #{orderCode}</h3>
+                <article key={order.id} className={"order-card " + (isOpen ? "is-open" : "")}>
+                  <button
+                    type="button"
+                    className="order-header"
+                    aria-expanded={isOpen}
+                    aria-controls={orderElementId}
+                    onClick={() => setExpanded((current) => ({ ...current, [order.id]: !isOpen }))}
+                  >
+                    <span className="order-header-main">
+                      <span className="order-id">Order #{orderCode}</span>
+                      <span className="order-header-meta">
+                        <span>Reference ID: {order.id}</span>
+                        <span className="meta-separator" aria-hidden="true">·</span>
+                        <time dateTime={order.created_at || undefined}>{formatDate(order.created_at)}</time>
+                      </span>
+                    </span>
+                    <span className={"status-badge status-" + (order.status || "pending")}>
+                      {formatStatus(order.status)}
+                    </span>
+                    <span className="order-total">{"$" + total.toFixed(2)}</span>
+                    <span className={"chevron " + (isOpen ? "open" : "")} aria-hidden="true">⌄</span>
+                  </button>
 
-                      {order.order_code && (
-                        <p className="my-order-db-id">
-                          Reference ID: {order.id}
-                        </p>
+                  {isOpen && (
+                    <div className="order-body" id={orderElementId}>
+                      {order.status === "cancelled" ? (
+                        <div className="cancelled-note">This order was cancelled.</div>
+                      ) : (
+                        <div className="tracking-section">
+                          <div className="section-heading">
+                            <h2>Order progress</h2>
+                            <span>{formatStatus(order.status)}</span>
+                          </div>
+                          <div className="timeline" aria-label={"Order progress: " + formatStatus(order.status)}>
+                            {stepLabels.map((step, index) => (
+                              <div
+                                key={step}
+                                className={"timeline-step " + (index <= stepIndex ? "active" : "")}
+                              >
+                                <span className="timeline-dot">{index < stepIndex ? "✓" : index + 1}</span>
+                                <span className="timeline-label">{formatStatus(step)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
 
-                      <p>
-                        {order.created_at
-                          ? new Date(order.created_at).toLocaleString()
-                          : "No date"}
-                      </p>
-                    </div>
-
-                    <div className="my-order-badges">
-                      <span className={`order-status status-${order.status}`}>
-                        {formatStatus(order.status)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {order.status !== "cancelled" && (
-                    <div className="order-progress">
-                      {orderSteps.map((step, index) => (
-                        <div
-                          key={step}
-                          className={`progress-step ${
-                            index <= getStepIndex(order.status) ? "active" : ""
-                          }`}
-                        >
-                          <div className="progress-dot">{index + 1}</div>
-                          <span>{formatStatus(step)}</span>
+                      <section className="payment-info" aria-label="Payment information">
+                        <div className="payment-cell">
+                          <span>Payment method</span>
+                          <strong>{paymentMethod === "bank" ? "Manual QR payment" : formatStatus(paymentMethod)}</strong>
                         </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="my-order-payment-info">
-                    <p>
-                      <strong>Payment Method:</strong>{" "}
-                      {paymentMethod === "bank"
-                        ? "Manual Bank Transfer"
-                        : paymentMethod === "baray"
-                        ? "ABA / ACLEDA (Baray)"
-                        : paymentMethod === "payway"
-                        ? "ABA PayWay"
-                        : paymentMethod}
-                    </p>
-
-                    <p>
-                      <strong>Payment Status:</strong>{" "}
-                      <span
-                        className={`payment-status payment-${paymentStatus}`}
-                      >
-                        {formatStatus(paymentStatus)}
-                      </span>
-                    </p>
-
-                    {order.payment_reference && (
-                      <p>
-                        <strong>Reference:</strong> {order.payment_reference}
-                      </p>
-                    )}
-
-                    {order.payment_proof && (
-                      <p>
-                        <strong>Payment Proof:</strong>{" "}
-                        <a
-                          href={getImageUrl(order.payment_proof)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          View uploaded proof
-                        </a>
-                      </p>
-                    )}
-                  </div>
-
-                  {order.customer_note && (
-                    <div className="my-order-note">
-                      <strong>Your Note:</strong>
-                      <p>{order.customer_note}</p>
-                    </div>
-                  )}
-
-                  {order.admin_note && (
-                    <div className="my-admin-note">
-                      <strong>Message from Reachsei:</strong>
-                      <p>{order.admin_note}</p>
-                    </div>
-                  )}
-
-                  <div className="my-order-items">
-                    {order.items?.map((item) => (
-                      <div
-                        key={
-                          item.cartId ||
-                          `${item.id}-${
-                            item.size || item.selectedSize || "default"
-                          }`
-                        }
-                        className="my-order-item"
-                      >
-                        <img src={getImageUrl(item.image)} alt={item.name} />
-
-                        <div>
-                          <strong>{item.name}</strong>
-
-                          <p className="my-order-category">
-                            {item.category || "Product"}
-                          </p>
-
-                          <p className="my-order-size">
-                            Size: {item.size || item.selectedSize || "No size"}
-                          </p>
-
-                          <p>
-                            Qty: {item.quantity} × $
-                            {Number(item.price || 0).toFixed(2)}
-                          </p>
-
-                          <p>
-                            Subtotal: $
-                            {(
-                              Number(item.price || 0) *
-                              Number(item.quantity || 1)
-                            ).toFixed(2)}
-                          </p>
+                        <div className="payment-cell">
+                          <span>Payment status</span>
+                          <strong className={"pay-badge pay-" + paymentStatus}>
+                            {formatStatus(paymentStatus)}
+                          </strong>
                         </div>
+                        {order.payment_reference && (
+                          <div className="payment-cell">
+                            <span>Transaction reference</span>
+                            <strong>{order.payment_reference}</strong>
+                          </div>
+                        )}
+                        {order.payment_proof && (
+                          <div className="payment-cell payment-proof-cell">
+                            <span>Uploaded proof</span>
+                            <a href={getImageUrl(order.payment_proof)} target="_blank" rel="noreferrer">
+                              View payment screenshot
+                            </a>
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="items-list" aria-label="Products in this order">
+                        {order.items?.map((item, index) => {
+                          const price = Number(item.price || 0);
+                          const quantity = Number(item.quantity || 1);
+                          const lineSubtotal = price * quantity;
+                          return (
+                            <div key={item.id || item.product_id || order.id + "-" + index} className="item">
+                              <div className="item-image-wrap">
+                                {item.image ? (
+                                  <img src={getImageUrl(item.image)} alt="" className="item-image" />
+                                ) : (
+                                  <span className="item-placeholder" aria-hidden="true">RS</span>
+                                )}
+                              </div>
+                              <div className="item-info">
+                                <strong className="item-name">{item.name || "ReachSei product"}</strong>
+                                <span className="item-category">{item.category || "Sportswear & equipment"}</span>
+                                <span className="item-attributes">
+                                  {item.size || item.selectedSize ? "Size " + (item.size || item.selectedSize) : "Standard size"}
+                                  <span aria-hidden="true"> · </span>
+                                  Qty {quantity}
+                                </span>
+                              </div>
+                              <strong className="item-subtotal">{"$" + lineSubtotal.toFixed(2)}</strong>
+                            </div>
+                          );
+                        })}
+                      </section>
+
+                      <div className="order-totals">
+                        <div><span>Subtotal</span><strong>{"$" + (subtotal || total - deliveryFee).toFixed(2)}</strong></div>
+                        <div><span>Delivery fee</span><strong>{"$" + deliveryFee.toFixed(2)}</strong></div>
+                        <div className="order-grand-total"><span>Total</span><strong>{"$" + total.toFixed(2)}</strong></div>
                       </div>
-                    ))}
-                  </div>
 
-                  <div className="my-order-total">
-                    Total:{" "}
-                    <strong>${Number(order.total || 0).toFixed(2)}</strong>
-                  </div>
-
-                  <div className="my-order-actions">
-                    <button
-                      type="button"
-                      className="download-receipt-btn"
-                      onClick={() =>
-                        navigate("/receipt", {
-                          state: { order },
-                        })
-                      }
-                    >
-                      Download Receipt
-                    </button>
-
-                    {order.status === "pending" && (
-                      <button
-                        type="button"
-                        className="cancel-order-btn"
-                        onClick={() => cancelOrder(order.id)}
-                      >
-                        Cancel Order
-                      </button>
-                    )}
-
-                    <Link to="/contact" className="contact-support-btn">
-                      Contact Support
-                    </Link>
-                  </div>
-                </div>
+                      <div className="order-actions">
+                        <button
+                          type="button"
+                          className="btn btn-receipt"
+                          onClick={() => {
+                            sessionStorage.setItem("reachsei_last_receipt", JSON.stringify(order));
+                            navigate("/receipt", { state: { order } });
+                          }}
+                        >
+                          Download receipt
+                        </button>
+                        {order.status === "pending" && (
+                          <button type="button" className="btn btn-cancel" onClick={() => cancelOrder(order.id)}>
+                            Cancel order
+                          </button>
+                        )}
+                        <Link to="/contact" className="btn btn-support">Contact support</Link>
+                      </div>
+                    </div>
+                  )}
+                </article>
               );
             })}
           </div>
         )}
       </div>
-    </section>
+    </main>
   );
 }
+

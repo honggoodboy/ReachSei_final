@@ -6,21 +6,15 @@ export default function AdminReviews() {
   const API_BASE_URL = import.meta.env.VITE_API_URL;
   const [reviews, setReviews] = useState([]);
   const token = localStorage.getItem("adminToken");
- const fetchReviews = async () => {
-    await axios.delete(`${API_BASE_URL}/reviews/${id}`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-await axios.delete(`${API_BASE_URL}/reviews/${id}`, {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-    axios
-      .get(`${API_BASE_URL}/reviews`)
-      .then((res) => setReviews(res.data))
-      .catch((err) => console.error(err));
+  const fetchReviews = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/reviews`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setReviews(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Fetch reviews error:", error);
+    }
   };
 
   useEffect(() => {
@@ -32,7 +26,9 @@ await axios.delete(`${API_BASE_URL}/reviews/${id}`, {
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`${API_BASE_URL}/reviews/${id}`);
+      await axios.delete(`${API_BASE_URL}/reviews/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       fetchReviews();
     } catch (error) {
       console.error(error);

@@ -41,4 +41,21 @@ export function verifyUser(req, res, next) {
   }
 }
 
+// Permit guest checkout while binding signed-in orders to the server-verified user.
+export function optionalUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return next();
+
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Invalid authorization header" });
+  }
+
+  try {
+    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+}
 export default verifyAdmin;

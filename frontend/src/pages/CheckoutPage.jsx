@@ -226,7 +226,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!formData.address.trim()) {
+    if (formData.province !== "Pick Up" && !formData.address.trim()) {
       setMessage("Please enter your delivery address.");
       return;
     }
@@ -309,6 +309,9 @@ export default function CheckoutPage() {
         {
           headers: {
             "Content-Type": "multipart/form-data",
+            ...(localStorage.getItem("userToken")
+              ? { Authorization: `Bearer ${localStorage.getItem("userToken")}` }
+              : {}),
           },
         }
       );
@@ -328,6 +331,7 @@ export default function CheckoutPage() {
         subtotal: Number(createdOrder.subtotal ?? cartTotal),
         items: orderItems,
       };
+      sessionStorage.setItem("reachsei_last_receipt", JSON.stringify(receiptOrder));
 
       setMessage("Order placed successfully!");
 
@@ -543,7 +547,7 @@ export default function CheckoutPage() {
 
             <div className="checkout-field">
               <label>
-                Delivery Address <span>*</span>
+                Delivery Address {formData.province !== "Pick Up" && <span>*</span>}
               </label>
 
               <textarea
@@ -553,7 +557,7 @@ export default function CheckoutPage() {
                 onChange={handleChange}
                 rows="3"
                 className="checkout-textbox"
-                required
+                required={formData.province !== "Pick Up"}
               />
             </div>
 

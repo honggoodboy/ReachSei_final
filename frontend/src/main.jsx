@@ -29,19 +29,15 @@ import AdminLayout from "./components/AdminLayout";
 import ShopLayout from "./components/ShopLayout";
 
 import Login from "./pages/Login";
-import Register from "./pages/Register";
 import MyOrders from "./pages/MyOrders";
 import AdminReviews from "./pages/AdminReviews";
 import WishlistPage from "./pages/WishlistPage";
 import Profile from "./pages/Profile";
 import EditProfile from "./pages/EditProfile";
-import ChangePassword from "./pages/ChangePassword";
 import NewsletterPage from "./pages/NewsletterPage";
 import ContactPage from "./pages/ContactPage";
 import ReceiptPage from "./pages/ReceiptPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
 import KoompiCallback from "./pages/KoompiCallback.jsx";
 import "./index.css";
 
@@ -149,7 +145,22 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               />
 
               <Route
+                path="/reset-password"
+                element={<Navigate to="/login" replace />}
+              />
+
+              <Route
                 path="/reset-password/:token"
+                element={<Navigate to="/login" replace />}
+              />
+
+              <Route
+                path="/auth/callback"
+                element={<Navigate to="/login" replace />}
+              />
+
+              <Route
+                path="/auth/telegram/callback"
                 element={<Navigate to="/login" replace />}
               />
 
@@ -211,11 +222,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
               <Route
                 path="/profile/password"
-                element={
-                  <ShopLayout>
-                    <ChangePassword />
-                  </ShopLayout>
-                }
+                element={<Navigate to="/profile" replace />}
               />
 
               <Route

@@ -13,7 +13,6 @@ import dashboardRoutes from "./routes/dashboardRoutes.js";
 import userAuthRoutes from "./routes/userAuthRoutes.js";
 import reviewRoutes from "./routes/ReviewRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
-import paywayRoutes from "./routes/payway.routes.js";
 import barayRoutes from "./routes/baray.routes.js";
 
 const app = express();
@@ -44,14 +43,20 @@ app.use(
    PAYWAY ROUTES
 ========================= */
 
-app.use(
-  "/api/payway",
-  paywayRoutes
-);
-app.use(
-  "/payway",
-  paywayRoutes
-);
+// Manual QR payments only during the trial. Keep provider source files for
+// later integration, but do not expose payment creation or confirmation.
+const automatedPaymentsDisabled = (_req, res) => {
+  res.status(503).json({
+    success: false,
+    error: "Online payments are disabled. Upload your QR payment proof at checkout for admin review.",
+  });
+};
+
+app.use(["/api/payway", "/payway"], automatedPaymentsDisabled);
+
+// Baray status polling can mark an order paid without the current manual review.
+// Keep all Baray routes closed until automated payments are intentionally enabled.
+app.use(["/api/baray", "/baray"], automatedPaymentsDisabled);
 app.use(
   "/api/baray",
   barayRoutes
@@ -147,10 +152,7 @@ app.get(
 
       res.status(500).json({
         success: false,
-        error: err.message,
-        code: err.code,
-        detail: err.detail,
-        stack: err.stack,
+        error: "Database unavailable",
       });
     }
   }
@@ -179,7 +181,7 @@ const server = app.listen(
     );
 
     console.log(
-      "PayWay route: /api/payway"
+      "Manual QR payments enabled; automated payments disabled"
     );
   }
 );

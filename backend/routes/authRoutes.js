@@ -25,12 +25,11 @@ router.post("/admin/login", (req, res) => {
   res.status(401).json({ error: "Invalid email or password" });
 });
 
-/* =========================
-   TELEGRAM LOGIN REDIRECT
-   GET /auth/telegram/login -> forwards to /users/telegram/login
-========================= */
+/* Telegram is not an independent customer sign-in provider. */
 router.get("/telegram/login", (req, res) => {
-  res.redirect("/users/telegram/login");
+  res.status(410).json({
+    error: "Customer authentication is available through KOOMPI ID only.",
+  });
 });
 
 
