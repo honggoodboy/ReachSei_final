@@ -1,0 +1,162 @@
+# Reachsei Store
+
+Reachsei Store is an online storefront with a React frontend, an Express API, and a PostgreSQL database. It includes product browsing, a cart, checkout, customer accounts, order history, receipts, and admin management pages.
+
+## Current payment plan
+
+For the initial one-month trial, use **manual QR payments only**:
+
+1. The customer reviews the cart and selects pickup or delivery.
+2. The customer downloads the store QR code and pays through their banking app.
+3. The customer uploads a screenshot of the completed payment as proof.
+4. The backend creates the order with payment status `pending_review`.
+5. An admin checks the actual bank transaction, amount, and reference before marking payment `paid` or `rejected`.
+
+Uploading a screenshot is not payment approval. Payment status and fulfillment status are separate.
+
+ABA PayWay and Baray automated payments are reserved for later testing. Their source files remain in the project. The server currently blocks all PayWay endpoints and Baray mutation endpoints; Baray read endpoints remain available for existing status and receipt pages. Order creation accepts only the `bank` payment method and requires proof. Do not enable automated payment routes without a separate review and explicit approval.
+
+Current delivery fees:
+
+| Method | Fee |
+| --- | --- |
+| Pickup | $0.00 |
+| Phnom Penh delivery | $1.50 |
+| Other provinces | $2.00 |
+
+The backend calculates product prices and delivery fees. Never trust totals supplied by the browser.
+
+## Project structure
+
+```text
+backend/
+  server.js          Express entry point and route registration
+  db.js              PostgreSQL connection
+  middleware/        Authentication middleware
+  routes/            Products, orders, accounts, reviews, payment providers
+  utils/             Cloudinary uploads, email, Telegram notifications
+  sql/               Partial database changes
+frontend/
+  src/components/    Storefront and admin components
+  src/context/       Cart, wishlist, and toast state
+  src/pages/         Customer and admin screens
+  src/assets/        Images, including the manual payment QR
+  src/main.jsx       Frontend entry point and routing
+```
+
+## Local setup
+
+Install Node.js/npm and prepare a PostgreSQL database compatible with the application. Use a Node version supported by the installed Vite version.
+
+From the project root:
+
+```sh
+npm run install:all
+```
+
+Create `backend/.env` with your own values:
+
+```dotenv
+PORT=5000
+NODE_ENV=development
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DATABASE
+JWT_SECRET=replace-with-a-long-random-secret
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=replace-with-a-strong-password
+FRONTEND_URL=http://localhost:5173
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+```
+
+Cloudinary is used for product images and payment proof uploads. Optional features also reference `EMAIL_USER`, `EMAIL_PASS`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `GOOGLE_SHEET_WEBAPP_URL`, and KOOMPI authentication settings. Configure those only when testing the corresponding features. Automated payment credentials are not required for the manual QR trial.
+
+Create `frontend/.env.local`:
+
+```dotenv
+VITE_API_URL=http://localhost:5000
+VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
+
+Supabase settings support the frontend authentication integration. Values prefixed with `VITE_` are exposed to the browser; never put server secrets there. Keep real environment files and credentials out of Git.
+
+The repository does not include a complete database schema or a full migration setup. The SQL directory contains partial changes only. Obtain the existing schema or document a complete migration before attempting a fresh database installation. `db.js` currently configures SSL for PostgreSQL; local database settings may need adjustment.
+
+Start the API and frontend in separate terminals, from the project root:
+
+```sh
+npm run dev:backend
+```
+
+```sh
+npm run dev:frontend
+```
+
+The API defaults to port 5000. Open the frontend URL printed by Vite, normally `http://localhost:5173`.
+
+## Checks and builds
+
+```sh
+npm run build
+npm run lint --prefix frontend
+node --check backend/server.js
+node --check backend/routes/orderRoutes.js
+```
+
+`npm start` starts the backend only. The frontend build is written to `frontend/dist`; the Express server does not currently serve that build. No automated application test script is configured.
+
+At the initial project review, the frontend build passed with a bundle-size warning, while lint reported 17 errors and 8 warnings. These are baseline findings, not a guarantee of the current check results. Run the checks again after changes.
+
+## Project review instructions
+
+Review the whole project before implementing fixes. Report findings by severity with file locations, affected flows, reproduction steps where possible, and recommended fixes. Distinguish confirmed bugs from unverified behavior. Preserve existing uncommitted changes. Do not edit application files during a review unless asked to implement changes.
+
+### Functional review
+
+- Check registration, login, password reset, profile editing, and logout.
+- Check product browsing, product details, wishlist, cart quantities, and totals.
+- Check pickup and delivery fees on the frontend and backend.
+- Verify QR download works on desktop and mobile and the displayed QR belongs to the intended store account.
+- Check proof file types, size limits, previews, upload failures, and retry behavior.
+- Confirm orders cannot bypass proof upload or select disabled payment methods.
+- Confirm new payments remain `pending_review` until an authenticated admin approves them.
+- Check receipts, customer order history, ownership checks, and fulfillment updates.
+- Check admin products, orders, reviews, and payment rejection/approval.
+- Test duplicate submission, refresh, slow connections, empty states, and error messages.
+
+Known items needing review include positive whole-number quantity validation and the Admin Reviews page referencing an undefined `id`. Verify and report these alongside any additional findings.
+
+### One shared visual standard
+
+Use the existing Reachsei branding as the starting point for one consistent design system across customer and admin pages, on mobile and desktop. This is the intended standard; it has not yet been applied consistently throughout the project.
+
+| Area | Required consistency |
+| --- | --- |
+| Colors | Shared brand, page background, card background, text, border, and status colors |
+| Typography | Shared font families, size scale, weights, and line heights; readable English and Khmer |
+| Buttons | Consistent primary, secondary, and destructive variants, heights, padding, radii, and states |
+| Forms | Consistent labels, inputs, selects, errors, helper text, and focus styles |
+| Components | Consistent cards, tables, navigation, alerts, badges, and dialogs |
+| Layout | Shared spacing scale, content widths, alignment, borders, shadows, and responsive rules |
+| States | Consistent hover, focus, disabled, loading, empty, success, and error behavior |
+
+The same component variant should look and behave the same everywhere. Different purposes may have different styles, such as a primary action versus a delete button. Check contrast, keyboard focus, text overflow, and touch target sizes.
+
+Identify inconsistencies and propose shared CSS variables and reusable component styles first. Explain which existing styles should become the standard and which pages need changes. Obtain approval for the proposed visual standard before applying a project-wide redesign.
+
+## Manual acceptance test
+
+Use test accounts and approved test data. Any actual transfer or external notification should be coordinated with the store owner.
+
+1. Add a product to the cart and confirm a positive whole-number quantity and correct total.
+2. Test pickup, Phnom Penh delivery, and another province.
+3. Download the QR on a phone and confirm the payment instructions and recipient details.
+4. Upload valid payment proof and submit the order once.
+5. Confirm the receipt and customer order history display the correct items, fees, total, and pending payment status.
+6. Sign in as an admin, inspect proof, and verify the transaction against the bank record.
+7. Approve a valid payment and reject invalid proof; confirm customer-visible statuses update correctly.
+8. Confirm another customer cannot access or modify the order and unauthenticated requests cannot approve payment.
+9. Confirm PayWay requests and Baray payment mutations remain blocked.
+
+Build and syntax checks do not establish that live database, uploads, email, notifications, or bank transactions work. Record the results of this full flow before launch.

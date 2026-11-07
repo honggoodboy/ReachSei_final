@@ -1,19 +1,27 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import "./AdminOrders.css";
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [openOrderId, setOpenOrderId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [fetchError, setFetchError] = useState("");
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  const rawApiUrl = import.meta.env.VITE_API_URL || "";
+  const API_BASE_URL =
+    window.location.hostname !== "localhost" &&
+    (!rawApiUrl || rawApiUrl.includes("localhost"))
+      ? "https://reachsei-final.onrender.com"
+      : rawApiUrl || "http://localhost:5000";
   const token = localStorage.getItem("adminToken");
 
   /* =========================================================
      FETCH ORDERS
   ========================================================= */
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/orders`, {
         headers: {
@@ -21,15 +29,39 @@ export default function AdminOrders() {
         },
       });
 
-      setOrders(Array.isArray(res.data) ? res.data : []);
+      if (!Array.isArray(res.data)) {
+        throw new Error("The server returned an invalid order list.");
+      }
+
+      setOrders(res.data);
+      setFetchError("");
     } catch (error) {
       console.error("Fetch orders error:", error);
+      setFetchError(
+        error.response?.status === 401 || error.response?.status === 403
+          ? "Admin access expired or was denied. Please sign in again."
+          : "Could not load orders from the server. Check the API connection and try again."
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [API_BASE_URL, token]);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    if (!token) return undefined;
+
+    const initialRefresh = window.setTimeout(fetchOrders, 0);
+    const refreshTimer = window.setInterval(
+      fetchOrders,
+      30000
+    );
+
+    return () => {
+      window.clearTimeout(initialRefresh);
+      window.clearInterval(refreshTimer);
+    };
+  }, [fetchOrders, token]);
 
   /* =========================================================
      UPDATE ORDER STATUS
@@ -427,7 +459,59 @@ export default function AdminOrders() {
      EMPTY
   ========================================================= */
 
+  if (!token) {
+    return (
+      <section className="admin-orders-page">
+        <div className="admin-orders-container">
+          <div className="orders-fetch-error" role="alert">
+            Your admin session is missing. Please sign in again.
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (loading) {
+    return (
+      <section className="admin-orders-page">
+        <div className="admin-orders-container">
+          <p className="orders-loading" role="status">Loading orders...</p>
+        </div>
+      </section>
+    );
+  }
+
   if (orders.length === 0) {
+    if (fetchError) {
+      return (
+        <section className="admin-orders-page">
+          <div className="admin-orders-container">
+            <div className="orders-page-header">
+              <div>
+                <span className="page-eyebrow">MANAGEMENT</span>
+                <h1>Orders</h1>
+                <p>Manage customer orders and payments.</p>
+              </div>
+              <button
+                type="button"
+                className="refresh-orders-btn"
+                onClick={() => {
+                  setRefreshing(true);
+                  fetchOrders();
+                }}
+                disabled={refreshing}
+              >
+                {refreshing ? "Refreshing..." : "Try again"}
+              </button>
+            </div>
+            <div className="orders-fetch-error" role="alert">
+              {fetchError}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section className="admin-orders-page">
         <div className="admin-orders-container">
@@ -443,6 +527,17 @@ export default function AdminOrders() {
                 Manage customer orders and payments.
               </p>
             </div>
+            <button
+              type="button"
+              className="refresh-orders-btn"
+              onClick={() => {
+                setRefreshing(true);
+                fetchOrders();
+              }}
+              disabled={refreshing}
+            >
+              {refreshing ? "Refreshing..." : "Refresh orders"}
+            </button>
           </div>
 
           <div className="empty-admin-orders">
@@ -486,16 +581,35 @@ export default function AdminOrders() {
             </p>
           </div>
 
-          <div className="orders-count">
-            <strong>{orders.length}</strong>
+          <div className="orders-toolbar">
+            <button
+              type="button"
+              className="refresh-orders-btn"
+              onClick={() => {
+                setRefreshing(true);
+                fetchOrders();
+              }}
+              disabled={refreshing}
+            >
+              {refreshing ? "Refreshing..." : "Refresh orders"}
+            </button>
+            <div className="orders-count">
+              <strong>{orders.length}</strong>
 
-            <span>
-              {orders.length === 1
-                ? "Order"
-                : "Orders"}
-            </span>
+              <span>
+                {orders.length === 1
+                  ? "Order"
+                  : "Orders"}
+              </span>
+            </div>
           </div>
         </header>
+
+        {fetchError && (
+          <div className="orders-fetch-error" role="alert">
+            {fetchError} Showing previously loaded orders.
+          </div>
+        )}
 
         {/* =================================================
             ORDERS
@@ -616,34 +730,30 @@ export default function AdminOrders() {
 
                   {/* STATUS */}
 
-                  <div className="order-summary-status">
+                  <div className="order-summary-status" aria-label="Order and payment status">
+                    <div className="summary-status-group">
+                      <span className="summary-status-label">Order</span>
+                      <span
+                        className={`admin-status status-${
+                          order.status || "pending"
+                        }`}
+                      >
+                        <i />
+                        {formatText(order.status || "pending")}
+                      </span>
+                    </div>
 
-                    <span
-                      className={`admin-status status-${
-                        order.status || "pending"
-                      }`}
-                    >
-                      <i />
-
-                      {formatText(
-                        order.status || "pending"
-                      )}
-                    </span>
-
-                    <span
-                      className={`admin-payment-status ${
-                        getPaymentStatusClass(
-                          paymentStatus
-                        )
-                      }`}
-                    >
-                      <i />
-
-                      {formatText(
-                        paymentStatus
-                      )}
-                    </span>
-
+                    <div className="summary-status-group">
+                      <span className="summary-status-label">Payment</span>
+                      <span
+                        className={`admin-payment-status ${
+                          getPaymentStatusClass(paymentStatus)
+                        }`}
+                      >
+                        <i />
+                        {formatText(paymentStatus)}
+                      </span>
+                    </div>
                   </div>
 
                   {/* ACTIONS */}
@@ -852,24 +962,6 @@ export default function AdminOrders() {
                             <strong>
                               QR Payment
                             </strong>
-                          </div>
-
-                          <div className="info-row">
-                            <span>Status</span>
-
-                            <span
-                              className={`admin-payment-status ${
-                                getPaymentStatusClass(
-                                  paymentStatus
-                                )
-                              }`}
-                            >
-                              <i />
-
-                              {formatText(
-                                paymentStatus
-                              )}
-                            </span>
                           </div>
 
                           {paymentReference && (
