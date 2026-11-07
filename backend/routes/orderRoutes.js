@@ -258,6 +258,55 @@ const sendOrderToGoogleSheet =
     }
   };
 
+async function attachOrderItems(orders) {
+  const itemsByOrderId = new Map(
+    orders.map((order) => [String(order.id), []])
+  );
+
+  if (orders.length === 0) return orders;
+
+  const itemsResult = await pool.query(
+    `
+    SELECT
+      oi.order_id,
+      oi.id,
+      oi.product_id,
+      oi.quantity,
+      oi.price,
+      oi.size,
+      p.name,
+      p.image,
+      p.category
+    FROM order_items oi
+    LEFT JOIN products p ON p.id = oi.product_id
+    WHERE oi.order_id = ANY($1)
+    ORDER BY oi.order_id, oi.id
+    `,
+    [orders.map((order) => order.id)]
+  );
+
+  for (const row of itemsResult.rows) {
+    const orderItems = itemsByOrderId.get(String(row.order_id));
+    if (!orderItems) continue;
+
+    orderItems.push({
+      id: row.id,
+      product_id: row.product_id,
+      quantity: row.quantity,
+      price: row.price,
+      size: row.size,
+      name: row.name,
+      image: row.image,
+      category: row.category,
+    });
+  }
+
+  return orders.map((order) => ({
+    ...order,
+    items: itemsByOrderId.get(String(order.id)),
+  }));
+}
+
 /* =========================
    GET ALL ORDERS
    ADMIN
@@ -305,41 +354,7 @@ router.get(
             o.created_at DESC
         `);
 
-      const orders =
-        ordersResult.rows;
-
-      for (
-        const order
-        of orders
-      ) {
-
-        const itemsResult =
-          await pool.query(
-            `
-            SELECT
-              oi.id,
-              oi.product_id,
-              oi.quantity,
-              oi.price,
-              oi.size,
-
-              p.name,
-              p.image,
-              p.category
-
-            FROM order_items oi
-
-            LEFT JOIN products p
-              ON oi.product_id = p.id
-
-            WHERE oi.order_id = $1
-            `,
-            [order.id]
-          );
-
-        order.items =
-          itemsResult.rows;
-      }
+      const orders = await attachOrderItems(ordersResult.rows);
 
       res.json(orders);
 
@@ -1103,41 +1118,7 @@ router.get(
           [userId]
         );
 
-      const orders =
-        ordersResult.rows;
-
-      for (
-        const order
-        of orders
-      ) {
-
-        const itemsResult =
-          await pool.query(
-            `
-            SELECT
-              oi.id,
-              oi.product_id,
-              oi.quantity,
-              oi.price,
-              oi.size,
-
-              p.name,
-              p.image,
-              p.category
-
-            FROM order_items oi
-
-            LEFT JOIN products p
-              ON oi.product_id = p.id
-
-            WHERE oi.order_id = $1
-            `,
-            [order.id]
-          );
-
-        order.items =
-          itemsResult.rows;
-      }
+      const orders = await attachOrderItems(ordersResult.rows);
 
       res.json(orders);
 
