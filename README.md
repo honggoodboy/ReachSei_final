@@ -94,6 +94,7 @@ npm run dev:frontend
 ```
 
 The API defaults to port 5000. Open the frontend URL printed by Vite, normally `http://localhost:5173`.
+<<<<<<< HEAD
 
 ## Checks and builds
 
@@ -160,3 +161,5 @@ Use test accounts and approved test data. Any actual transfer or external notifi
 9. Confirm PayWay requests and Baray payment mutations remain blocked.
 
 Build and syntax checks do not establish that live database, uploads, email, notifications, or bank transactions work. Record the results of this full flow before launch.
+=======
+>>>>>>> 320a03806e6ee3e7d97c04bc09b08ced399341dd
