@@ -1,14 +1,14 @@
 .edit-product-page {
   min-height: 100vh;
   background: var(--paper);
-  padding: 40px 16px;
+  padding: 40px var(--space-4);
 }
 
 .edit-product-card {
   max-width: 720px;
   margin: auto;
   background: white;
-  border-radius: 24px;
+  border-radius: var(--radius-container);
   padding: 28px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
 }
@@ -17,11 +17,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .edit-product-head h1 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font-family);
   font-size: 32px;
 }
 
@@ -39,9 +39,9 @@
 .edit-product-form input,
 .edit-product-form textarea,
 .edit-product-form select {
-  padding: 14px 16px;
+  padding: 14px var(--space-4);
   border: 1px solid var(--dust);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   outline: none;
 }
 
@@ -50,7 +50,7 @@
   background: var(--sun);
   color: var(--ink);
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   font-weight: 800;
   cursor: pointer;
 }
@@ -61,16 +61,16 @@
   color: var(--sky2);
 }
 .edit-image-box {
-  margin-top: 24px;
+  margin-top: var(--space-6);
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .edit-image-preview {
   width: 100%;
   max-height: 280px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--dust);
 }
 
@@ -79,18 +79,18 @@
   background: var(--sun);
   color: var(--ink);
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   font-weight: 800;
   cursor: pointer;
 }
 .edit-image-box {
-  margin-top: 24px;
+  margin-top: var(--space-6);
   display: grid;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .edit-image-box h2 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font-family);
   font-size: 22px;
 }
 
@@ -98,14 +98,14 @@
   width: 100%;
   max-height: 280px;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--dust);
 }
 
 .edit-image-box input {
-  padding: 12px;
+  padding: var(--space-3);
   border: 1px solid var(--dust);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
 }
 
 .edit-image-box button {
@@ -113,7 +113,7 @@
   background: var(--sun);
   color: var(--ink);
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   font-weight: 800;
   cursor: pointer;
 }

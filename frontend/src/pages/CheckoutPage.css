@@ -1,7 +1,7 @@
 .checkout-page {
   min-height: 100vh;
-  padding: 40px 16px 80px;
-  background: var(--paper, #f7f5f0);
+  padding: 40px var(--space-4) 80px;
+  background: var(--paper, var(--color-background));
 }
 
 .checkout-container {
@@ -10,7 +10,7 @@
 
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.8fr);
-  gap: 24px;
+  gap: var(--space-6);
 
   align-items: start;
 }
@@ -21,9 +21,9 @@
 
 .checkout-form-card,
 .checkout-summary-card {
-  background: #fff;
-  border: 1px solid #e5e0d7;
-  border-radius: 18px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
 }
 
@@ -42,31 +42,31 @@
 ========================= */
 
 .checkout-head {
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
 }
 
 .back-link {
-  color: #666;
+  color: var(--color-text-muted);
   text-decoration: none;
   font-size: 14px;
   font-weight: 700;
 }
 
 .back-link:hover {
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 .checkout-form-card h1 {
   margin: 0 0 28px;
   font-size: 32px;
   line-height: 1.1;
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 .checkout-summary-card h2 {
   margin: 0 0 22px;
   font-size: 22px;
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 /* =========================
@@ -86,21 +86,21 @@
 .checkout-field > label,
 .checkout-payment-method > label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 
-  color: #222;
+  color: var(--color-text-primary);
   font-size: 14px;
   font-weight: 800;
 }
 
 .checkout-field label span,
 .payment-proof-label b {
-  color: #d22;
+  color: var(--color-error);
 }
 
 .checkout-field label small {
   margin-left: 5px;
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 500;
 }
 
@@ -109,11 +109,11 @@
   width: 100%;
   box-sizing: border-box;
 
-  border: 1px solid #dcd7ce;
-  border-radius: 11px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-control);
 
-  background: #fff;
-  color: #111;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
 
   padding: 13px 14px;
 
@@ -138,7 +138,7 @@
 
 .checkout-form input:focus,
 .checkout-form textarea:focus {
-  border-color: #111;
+  border-color: var(--color-text-primary);
 
   box-shadow:
     0 0 0 3px rgba(0, 0, 0, 0.06);
@@ -146,7 +146,7 @@
 
 .checkout-form input::placeholder,
 .checkout-form textarea::placeholder {
-  color: #aaa;
+  color: var(--color-text-subtle);
 }
 
 /* =========================
@@ -163,10 +163,10 @@
 
   padding: 13px 14px;
 
-  border: 1px solid #dcd7ce;
-  border-radius: 11px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-control);
 
-  background: #fff;
+  background: var(--color-surface);
 
   display: flex;
   align-items: center;
@@ -185,7 +185,7 @@
 
 .province-selector:hover,
 .province-selector.active {
-  border-color: #111;
+  border-color: var(--color-text-primary);
 }
 
 .province-selector.active {
@@ -194,16 +194,16 @@
 }
 
 .province-selector .placeholder {
-  color: #999;
+  color: var(--color-text-muted);
 }
 
 .province-selector .selected {
-  color: #111;
+  color: var(--color-text-primary);
   font-weight: 600;
 }
 
 .province-arrow {
-  color: #777;
+  color: var(--color-text-muted);
   font-size: 11px;
 }
 
@@ -214,9 +214,9 @@
   left: 0;
   right: 0;
 
-  background: #fff;
+  background: var(--color-surface);
 
-  border: 1px solid #ded9d0;
+  border: 1px solid var(--color-border-soft);
   border-radius: 13px;
 
   box-shadow:
@@ -230,15 +230,15 @@
 .province-search-box {
   padding: 10px;
 
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-soft);
 
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
 
 .province-search-box span {
-  color: #777;
+  color: var(--color-text-muted);
   font-size: 20px;
 }
 
@@ -254,7 +254,7 @@
 
   min-height: 40px !important;
 
-  padding: 8px !important;
+  padding: var(--space-2) !important;
 }
 
 .province-list {
@@ -266,9 +266,9 @@
   width: 100%;
 
   border: 0;
-  background: #fff;
+  background: var(--color-surface);
 
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
 
   display: flex;
   align-items: center;
@@ -286,16 +286,16 @@
 }
 
 .province-option:hover {
-  background: #f6f4ef;
+  background: var(--color-background);
 }
 
 .province-option.selected {
-  background: #f0ede7;
+  background: var(--color-surface-muted);
   font-weight: 800;
 }
 
 .province-option small {
-  color: #777;
+  color: var(--color-text-muted);
   font-size: 12px;
 }
 
@@ -304,7 +304,7 @@
 
   text-align: center;
 
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 
@@ -317,16 +317,16 @@
 }
 
 .qr-only-payment {
-  border: 1px solid #ded9d0;
-  border-radius: 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-control);
   padding: 14px;
-  background: #faf9f6;
+  background: var(--color-background);
 }
 
 .payment-radio {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--space-3);
 }
 
 .radio-circle {
@@ -339,8 +339,8 @@
   align-items: center;
   justify-content: center;
 
-  background: #111;
-  color: #fff;
+  background: var(--color-text-primary);
+  color: var(--color-surface);
 
   font-size: 12px;
   font-weight: 900;
@@ -354,7 +354,7 @@
 .payment-radio small {
   display: block;
   margin-top: 2px;
-  color: #777;
+  color: var(--color-text-muted);
 }
 
 /* =========================
@@ -364,23 +364,23 @@
 .bank-payment-box {
   padding: 20px;
 
-  border: 1px solid #ded9d0;
-  border-radius: 15px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
 
-  background: #faf9f6;
+  background: var(--color-background);
 }
 
 .bank-payment-box h3 {
   margin: 0 0 7px;
 
   font-size: 20px;
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 .bank-payment-box > p {
   margin: 0 0 18px;
 
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -388,22 +388,22 @@
 .bank-info {
   padding: 14px;
 
-  border-radius: 11px;
+  border-radius: var(--radius-control);
 
-  background: #fff;
+  background: var(--color-surface);
 
-  border: 1px solid #e7e2d9;
+  border: 1px solid var(--color-border-soft);
 }
 
 .bank-info p {
   margin: 7px 0;
 
-  color: #444;
+  color: var(--color-text-secondary);
   font-size: 14px;
 }
 
 .bank-info strong {
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 /* =========================
@@ -411,15 +411,15 @@
 ========================= */
 
 .qr-payment-box {
-  margin-top: 16px;
+  margin-top: var(--space-4);
 
   padding: 20px;
 
-  border-radius: 14px;
+  border-radius: var(--radius-card);
 
-  background: #fff;
+  background: var(--color-surface);
 
-  border: 1px solid #e3ded5;
+  border: 1px solid var(--color-border-soft);
 
   text-align: center;
 }
@@ -428,7 +428,7 @@
   margin: 0 0 14px;
 
   font-size: 17px;
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 .aba-qr-image {
@@ -439,9 +439,9 @@
 
   margin: 0 auto;
 
-  border-radius: 10px;
+  border-radius: var(--radius-control);
 
-  border: 1px solid #eee;
+  border: 1px solid var(--color-border-soft);
 }
 
 .qr-actions {
@@ -462,8 +462,8 @@
 
   border-radius: 9px;
 
-  background: #111;
-  color: #fff;
+  background: var(--color-text-primary);
+  color: var(--color-surface);
 
   text-decoration: none;
 
@@ -480,7 +480,7 @@
 
   max-width: 440px;
 
-  color: #777;
+  color: var(--color-text-muted);
 
   font-size: 12px;
   line-height: 1.5;
@@ -509,9 +509,9 @@
 .payment-proof-label > span {
   display: block;
 
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 
-  color: #222;
+  color: var(--color-text-primary);
 
   font-size: 14px;
   font-weight: 800;
@@ -520,15 +520,15 @@
 .payment-proof-label input[type="file"] {
   padding: 10px;
 
-  background: #fff;
+  background: var(--color-surface);
 
   cursor: pointer;
 }
 
 .payment-proof-name {
-  margin: 8px 0 0;
+  margin: var(--space-2) 0 0;
 
-  color: #237a43;
+  color: var(--color-success);
 
   font-size: 13px;
   font-weight: 700;
@@ -546,10 +546,10 @@
   min-height: 52px;
 
   border: 0;
-  border-radius: 11px;
+  border-radius: var(--radius-control);
 
-  background: #111;
-  color: #fff;
+  background: var(--color-text-primary);
+  color: var(--color-surface);
 
   font-family: inherit;
 
@@ -579,22 +579,22 @@
 .checkout-message {
   margin: 18px 0 0;
 
-  padding: 12px 14px;
+  padding: var(--space-3) 14px;
 
-  border-radius: 10px;
+  border-radius: var(--radius-control);
 
   font-size: 14px;
   font-weight: 700;
 }
 
 .checkout-message.success {
-  background: #eaf7ef;
-  color: #247443;
+  background: var(--color-success-soft);
+  color: var(--color-success);
 }
 
 .checkout-message.error {
-  background: #fff0f0;
-  color: #b32626;
+  background: var(--color-surface)0f0;
+  color: var(--color-error);
 }
 
 /* =========================
@@ -604,7 +604,7 @@
 .checkout-item {
   padding: 14px 0;
 
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--color-border-soft);
 
   display: flex;
   align-items: flex-start;
@@ -620,7 +620,7 @@
 .checkout-item-name {
   display: block;
 
-  color: #111;
+  color: var(--color-text-primary);
 
   font-size: 14px;
   font-weight: 800;
@@ -630,9 +630,9 @@
 .checkout-item-price {
   display: block;
 
-  margin-top: 4px;
+  margin-top: var(--space-1);
 
-  color: #888;
+  color: var(--color-text-muted);
 
   font-size: 12px;
 }
@@ -640,7 +640,7 @@
 .checkout-item > strong {
   white-space: nowrap;
 
-  color: #111;
+  color: var(--color-text-primary);
 
   font-size: 14px;
 }
@@ -650,11 +650,11 @@
 ========================= */
 
 .checkout-price-summary {
-  margin-top: 12px;
+  margin-top: var(--space-3);
 
-  padding-top: 16px;
+  padding-top: var(--space-4);
 
-  border-top: 1px solid #ded9d0;
+  border-top: 1px solid var(--color-border-soft);
 }
 
 .checkout-price-row {
@@ -662,25 +662,25 @@
 
   justify-content: space-between;
 
-  gap: 12px;
+  gap: var(--space-3);
 
   padding: 5px 0;
 
-  color: #666;
+  color: var(--color-text-muted);
 
   font-size: 14px;
 }
 
 .checkout-price-row strong {
-  color: #222;
+  color: var(--color-text-primary);
 }
 
 .checkout-price-row.delivery {
-  color: #555;
+  color: var(--color-text-muted);
 }
 
 .checkout-price-row.delivery strong {
-  color: #333;
+  color: var(--color-text-secondary);
 }
 
 .delivery-province {
@@ -688,7 +688,7 @@
 
   margin: 2px 0 7px;
 
-  color: #888;
+  color: var(--color-text-muted);
 
   font-size: 11px;
 
@@ -700,16 +700,16 @@
 
   padding-top: 14px;
 
-  border-top: 1px solid #ded9d0;
+  border-top: 1px solid var(--color-border-soft);
 
   display: flex;
 
   align-items: center;
   justify-content: space-between;
 
-  gap: 12px;
+  gap: var(--space-3);
 
-  color: #111;
+  color: var(--color-text-primary);
 
   font-size: 18px;
   font-weight: 900;
@@ -726,34 +726,34 @@
 .checkout-payment-note {
   margin-top: 18px;
 
-  padding-top: 16px;
+  padding-top: var(--space-4);
 
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--color-border-soft);
 }
 
 .checkout-payment-note p {
   margin: 0 0 7px;
 
-  color: #555;
+  color: var(--color-text-muted);
 
   font-size: 13px;
 }
 
 .checkout-payment-note strong {
-  color: #111;
+  color: var(--color-text-primary);
 }
 
 .checkout-payment-note small {
   display: block;
 
-  color: #888;
+  color: var(--color-text-muted);
 
   font-size: 11px;
   line-height: 1.5;
 }
 
 .empty-checkout {
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 14px;
 }
 .mobile-place-order {
@@ -789,7 +789,7 @@
 
 @media (max-width: 600px) {
   .checkout-page {
-    padding: 20px 12px 50px;
+    padding: 20px var(--space-3) 50px;
   }
 
   .checkout-container {
@@ -798,7 +798,7 @@
 
   .checkout-form-card,
   .checkout-summary-card {
-    border-radius: 14px;
+    border-radius: var(--radius-card);
   }
 
   .checkout-form-card {
@@ -854,7 +854,7 @@
   .mobile-place-order {
     display: block !important;
     width: 100%;
-    margin-top: 16px;
+    margin-top: var(--space-4);
   }
 }
 
@@ -864,8 +864,8 @@
 
 @media (max-width: 380px) {
   .checkout-page {
-    padding-left: 8px;
-    padding-right: 8px;
+    padding-left: var(--space-2);
+    padding-right: var(--space-2);
   }
 
   .checkout-form-card,
@@ -897,6 +897,6 @@
   .mobile-place-order {
     display: block !important;
     width: 100%;
-    margin-top: 16px;
+    margin-top: var(--space-4);
   }
 }

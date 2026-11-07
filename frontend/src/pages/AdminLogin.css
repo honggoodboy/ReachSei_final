@@ -4,30 +4,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: var(--space-6);
 }
 
 .admin-login-card {
   width: 100%;
   max-width: 430px;
   background: white;
-  border-radius: 24px;
+  border-radius: var(--radius-container);
   padding: 30px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
 }
 
 .admin-login-tag {
   display: inline-block;
-  background: #fff9e6;
+  background: var(--color-surface)9e6;
   color: var(--sun2);
-  padding: 6px 12px;
+  padding: 6px var(--space-3);
   border-radius: 999px;
   font-weight: 700;
   margin-bottom: 14px;
 }
 
 .admin-login-card h1 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font-family);
   margin-bottom: 20px;
 }
 
@@ -37,9 +37,9 @@
 }
 
 .admin-login-form input {
-  padding: 14px 16px;
+  padding: 14px var(--space-4);
   border: 1px solid var(--dust);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   outline: none;
 }
 
@@ -48,13 +48,13 @@
   background: var(--sun);
   color: var(--ink);
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   font-weight: 800;
   cursor: pointer;
 }
 
 .login-message {
   margin-top: 14px;
-  color: #dc2626;
+  color: var(--color-error);
   font-weight: 700;
 }

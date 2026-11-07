@@ -5,18 +5,71 @@
 }
 
 :root {
-  --sun: #ffd000;
-  --sun2: #ffa800;
-  --sky: #0ea5e9;
-  --sky2: #0284c7;
-  --mint: #10b981;
-  --coral: #ff6b6b;
-  --ink: #0f172a;
-  --ink2: #334155;
-  --smoke: #64748b;
-  --dust: #cbd5e1;
-  --paper: #f8fafc;
-  --white: #ffffff;
+  /* ReachSei brand and semantic colors */
+  --color-brand-primary: #ffd000;
+  --color-brand-primary-hover: #ffdd33;
+  --color-brand-border: #d6a900;
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #334155;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-border: #cbd5e1;
+  --color-border-soft: #e2e8f0;
+  --color-success: #16a34a;
+  --color-success-soft: #dcfce7;
+  --color-warning: #8a6100;
+  --color-warning-soft: #fff9e6;
+  --color-error: #dc2626;
+  --color-error-hover: #b91c1c;
+  --color-error-soft: #fee2e2;
+  --color-info: #0284c7;
+  --color-info-soft: #e0f2fe;
+
+  /* Typography */
+  --font-family: "Outfit", "Noto Sans Khmer", "Khmer OS System", sans-serif;
+  --font-size-caption: 0.75rem;
+  --font-size-small: 0.875rem;
+  --font-size-body: 1rem;
+  --font-size-section: 1.25rem;
+  --font-size-page: clamp(1.75rem, 4vw, 2.5rem);
+  --line-height-body: 1.5;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Shape and elevation */
+  --radius-small: 8px;
+  --radius-control: 12px;
+  --radius-card: 16px;
+  --radius-section: 20px;
+  --radius-container: 24px;
+  --radius-pill: 999px;
+  --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-popover: 0 16px 40px rgba(15, 23, 42, 0.12);
+
+  /* Backward-compatible aliases for existing stylesheets */
+  --sun: var(--color-brand-primary);
+  --sun2: var(--color-warning);
+  --sky: var(--color-info);
+  --sky2: var(--color-info);
+  --mint: var(--color-success);
+  --coral: var(--color-error);
+  --ink: var(--color-text-primary);
+  --ink2: var(--color-text-secondary);
+  --smoke: var(--color-text-muted);
+  --dust: var(--color-border);
+  --paper: var(--color-background);
+  --white: var(--color-surface);
 }
 
 html {
@@ -24,10 +77,12 @@ html {
 }
 
 body {
-  font-family: "Outfit", sans-serif;
+  min-width: 320px;
+  font-family: var(--font-family);
   background: var(--paper);
   color: var(--ink);
   overflow-x: hidden;
+  line-height: var(--line-height-body);
 }
 
 a {
@@ -41,6 +96,31 @@ img {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
+  color: var(--color-text-primary);
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 3px solid rgba(255, 208, 0, 0.55);
+  outline-offset: 2px;
+}
+
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+::placeholder {
+  color: var(--color-text-subtle);
+  opacity: 1;
 }

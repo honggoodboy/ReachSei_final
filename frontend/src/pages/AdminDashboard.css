@@ -1,7 +1,7 @@
 .admin-dashboard {
   min-height: 100vh;
   background: var(--paper);
-  padding: 40px 16px;
+  padding: 40px var(--space-4);
 }
 
 .dashboard-container {
@@ -10,28 +10,28 @@
 }
 
 .dashboard-container h1 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font-family);
   font-size: 34px;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
-  margin-bottom: 32px;
+  margin-bottom: var(--space-8);
 }
 
 .stat-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-section);
   padding: 22px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
 .stat-card p {
   color: var(--smoke);
-  margin-bottom: 8px;
+  margin-bottom: var(--space-2);
 }
 
 .stat-card h2 {
@@ -40,8 +40,8 @@
 
 .recent-orders {
   background: white;
-  border-radius: 24px;
-  padding: 24px;
+  border-radius: var(--radius-container);
+  padding: var(--space-6);
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
@@ -57,7 +57,7 @@
 }
 
 .recent-order-card span {
-  background: #fff9e6;
+  background: var(--color-surface)9e6;
   color: var(--sun2);
   padding: 5px 10px;
   border-radius: 999px;

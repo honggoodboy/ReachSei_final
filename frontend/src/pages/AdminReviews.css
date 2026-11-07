@@ -1,7 +1,7 @@
 .admin-reviews-page {
   min-height: 100vh;
   background: var(--paper);
-  padding: 40px 16px;
+  padding: 40px var(--space-4);
 }
 
 .admin-reviews-container {
@@ -10,23 +10,23 @@
 }
 
 .admin-reviews-container h1 {
-  font-family: "Syne", sans-serif;
+  font-family: var(--font-family);
   font-size: 34px;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .admin-review-list {
   display: grid;
-  gap: 16px;
+  gap: var(--space-4);
 }
 
 .admin-review-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-section);
   padding: 20px;
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--space-4);
   box-shadow: 0 10px 30px rgba(0,0,0,0.08);
 }
 
@@ -36,8 +36,8 @@
 }
 
 .review-stars {
-  color: #f59e0b;
-  margin-bottom: 8px;
+  color: var(--color-brand-primary);
+  margin-bottom: var(--space-2);
 }
 
 .admin-review-card small {
@@ -48,10 +48,10 @@
 
 .delete-review-btn {
   border: none;
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-error-soft);
+  color: var(--color-error);
   padding: 10px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-control);
   font-weight: 800;
   height: fit-content;
   cursor: pointer;

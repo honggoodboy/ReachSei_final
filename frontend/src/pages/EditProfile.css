@@ -4,14 +4,14 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 36px 16px 80px;
+  padding: 36px var(--space-4) 80px;
 }
 
 .edit-profile-card {
   width: 100%;
   max-width: 480px;
   background: white;
-  border-radius: 24px;
+  border-radius: var(--radius-container);
   padding: 30px;
   box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
 }
@@ -20,17 +20,17 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--space-6);
 }
 
 .edit-profile-head h1 {
-  font-family: "Syne", sans-serif;
-  margin: 0 0 4px 0;
+  font-family: var(--font-family);
+  margin: 0 0 var(--space-1) 0;
 }
 
 .edit-profile-sub {
   font-size: 13px;
-  color: #64748b;
+  color: var(--color-text-muted);
   margin: 0;
 }
 
@@ -62,9 +62,9 @@
 }
 
 .edit-profile-form input {
-  padding: 14px 16px;
+  padding: 14px var(--space-4);
   border: 1px solid var(--dust);
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   outline: none;
 }
 
@@ -73,7 +73,7 @@
   background: var(--sun);
   color: var(--ink);
   padding: 14px;
-  border-radius: 14px;
+  border-radius: var(--radius-card);
   font-weight: 800;
   cursor: pointer;
 }
